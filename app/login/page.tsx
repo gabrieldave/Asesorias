@@ -1,9 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
-import { motion } from "framer-motion";
 import { LogIn, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
@@ -11,52 +8,48 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
     setLoading(true);
     setError("");
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password,
+        }),
       });
 
-      if (authError) throw authError;
+      const data = await response.json();
 
-      if (data.user) {
-        // Lista de emails permitidos para acceso admin (desde variable de entorno)
-        const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "";
-        const allowedAdminEmails = adminEmail
-          .split(",")
-          .map((email) => email.trim())
-          .filter((email) => email !== "");
+      if (!response.ok) {
+        throw new Error(data.error || "Error al iniciar sesión");
+      }
 
-        // Verificar que el email esté en la lista de permitidos
-        if (allowedAdminEmails.includes(data.user.email || "")) {
-          router.push("/admin");
-          router.refresh();
-        } else {
-          await supabase.auth.signOut();
-          setError("No tienes permisos de administrador. Solo el administrador autorizado puede acceder.");
-        }
+      if (data.success) {
+        // Redirigir al dashboard
+        window.location.href = "/admin";
+      } else {
+        throw new Error("Error al iniciar sesión");
       }
     } catch (err: any) {
+      console.error("Error de login:", err);
       setError(err.message || "Error al iniciar sesión");
-    } finally {
       setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md border-terminal p-8"
-      >
+      <div className="w-full max-w-md border-terminal p-8">
         <div className="text-center mb-8">
           <LogIn className="w-12 h-12 text-profit mx-auto mb-4" />
           <h1 className="text-3xl font-bold uppercase tracking-wider mb-2">
@@ -69,14 +62,10 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-6">
           {error && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex items-center gap-2 p-3 border border-loss bg-loss/10 text-loss text-sm"
-            >
+            <div className="flex items-center gap-2 p-3 border border-loss bg-loss/10 text-loss text-sm">
               <AlertCircle className="w-4 h-4" />
               <span>{error}</span>
-            </motion.div>
+            </div>
           )}
 
           <div>
@@ -115,7 +104,7 @@ export default function LoginPage() {
             {loading ? "Iniciando sesión..." : "Ingresar"}
           </button>
         </form>
-      </motion.div>
+      </div>
     </div>
   );
 }

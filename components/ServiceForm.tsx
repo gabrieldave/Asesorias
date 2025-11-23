@@ -114,7 +114,7 @@ export default function ServiceForm({
 
           <div>
             <label className="block text-sm font-semibold uppercase mb-2">
-              Precio (CLP)
+                    Precio (USD)
             </label>
             <input
               type="number"

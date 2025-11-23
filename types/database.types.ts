@@ -33,6 +33,17 @@ export type Booking = {
   gcal_event_id: string | null;
 };
 
+export type AdminUser = {
+  id: number;
+  email: string;
+  password_hash: string;
+  name: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
+};
+
 // Tipo Database para Supabase
 export type Database = {
   public: {
@@ -51,6 +62,11 @@ export type Database = {
         Row: Booking;
         Insert: Omit<Booking, "id" | "created_at">;
         Update: Partial<Omit<Booking, "id" | "created_at">>;
+      };
+      admin_users: {
+        Row: AdminUser;
+        Insert: Omit<AdminUser, "id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<AdminUser, "id" | "created_at" | "updated_at">>;
       };
     };
     Views: {

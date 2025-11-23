@@ -4,6 +4,13 @@ import { motion } from "framer-motion";
 import { TrendingUp, ArrowDown } from "lucide-react";
 
 export default function Hero() {
+  const scrollToServices = () => {
+    const servicesSection = document.getElementById("services-section");
+    if (servicesSection) {
+      servicesSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden border-b border-border">
       {/* Grid background pattern */}
@@ -49,10 +56,16 @@ export default function Hero() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
-            <button className="border-terminal hover-terminal px-8 py-4 bg-background text-profit font-semibold uppercase tracking-wider text-sm">
+            <button
+              onClick={scrollToServices}
+              className="border-terminal hover-terminal px-8 py-4 bg-background text-profit font-semibold uppercase tracking-wider text-sm transition-all cursor-pointer"
+            >
               Ver Servicios
             </button>
-            <button className="border-terminal hover-terminal px-8 py-4 bg-profit text-background font-semibold uppercase tracking-wider text-sm">
+            <button
+              onClick={scrollToServices}
+              className="border-terminal hover-terminal px-8 py-4 bg-profit text-background font-semibold uppercase tracking-wider text-sm transition-all cursor-pointer"
+            >
               Agendar Ahora
             </button>
           </motion.div>

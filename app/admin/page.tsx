@@ -8,6 +8,7 @@ import { LogOut, Calendar, DollarSign, Users, Plus, Trash2, Edit2 } from "lucide
 import type { Service, AvailabilitySlot, Booking } from "@/types/database.types";
 import { getActiveServices } from "@/lib/supabase/queries";
 import ServiceForm from "@/components/ServiceForm";
+import SlotForm from "@/components/SlotForm";
 
 export default function AdminDashboard() {
   const [services, setServices] = useState<Service[]>([]);
@@ -16,6 +17,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"services" | "slots" | "bookings">("services");
   const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
+  const [isSlotFormOpen, setIsSlotFormOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const router = useRouter();
 
@@ -48,37 +50,39 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+      router.refresh();
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      router.push("/login");
+    }
   };
 
   const handleDeleteSlot = async (id: number) => {
     if (!confirm("¿Estás seguro de eliminar este slot?")) return;
 
-    const { error } = await supabase.from("availability_slots").delete().eq("id", id);
-    if (!error) {
-      loadData();
+    try {
+      const response = await fetch(`/api/admin/slots/delete?id=${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        loadData();
+      } else {
+        alert("Error al eliminar el slot: " + (data.error || "Error desconocido"));
+      }
+    } catch (error: any) {
+      console.error("Error deleting slot:", error);
+      alert("Error al eliminar el slot");
     }
   };
 
-  const handleCreateSlot = async () => {
-    const startTime = prompt("Fecha y hora de inicio (YYYY-MM-DD HH:mm):");
-    const duration = prompt("Duración en minutos:", "60");
-
-    if (!startTime || !duration) return;
-
-    const start = new Date(startTime);
-    const end = new Date(start.getTime() + parseInt(duration) * 60000);
-
-    const { error } = await supabase.from("availability_slots").insert({
-      start_time: start.toISOString(),
-      end_time: end.toISOString(),
-      is_booked: false,
-    } as any);
-
-    if (!error) {
-      loadData();
-    }
+  const handleCreateSlot = () => {
+    setIsSlotFormOpen(true);
   };
 
   const handleEditService = (service: Service) => {
@@ -171,7 +175,7 @@ export default function AdminDashboard() {
                       </span>
                     </div>
                     <p className="text-profit text-2xl font-bold mb-2">
-                      ${service.price.toLocaleString("es-CL")}
+                      ${service.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                     </p>
                     <p className="text-foreground/70 text-sm mb-4">{service.description}</p>
                     <div className="flex gap-2">
@@ -303,6 +307,13 @@ export default function AdminDashboard() {
           setIsServiceFormOpen(false);
           setEditingService(null);
         }}
+        onSave={loadData}
+      />
+
+      {/* Slot Form Modal */}
+      <SlotForm
+        isOpen={isSlotFormOpen}
+        onClose={() => setIsSlotFormOpen(false)}
         onSave={loadData}
       />
     </div>

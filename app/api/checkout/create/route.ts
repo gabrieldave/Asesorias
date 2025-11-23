@@ -1,14 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createServerClient } from "@/lib/supabase/server";
-import { createBooking } from "@/lib/supabase/queries";
-import type { Service } from "@/types/database.types";
+import { createClient } from "@supabase/supabase-js";
+import type { Service, Booking, Database } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
 });
+
+// Cliente con service role key para bypass RLS
+function getSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Supabase credentials not configured");
+  }
+
+  return createClient<Database>(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,7 +41,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = createServerClient();
+    const supabase = getSupabaseAdmin();
 
     // Verificar que el slot esté disponible
     const { data: slot, error: slotError } = await supabase
@@ -59,34 +75,89 @@ export async function GET(request: NextRequest) {
 
     const service = serviceData as Service;
 
-    // Crear booking pendiente
-    const booking = await createBooking({
-      customer_email: customerEmail,
-      customer_name: customerName,
-      service_id: parseInt(serviceId),
-      slot_id: parseInt(slotId),
-      payment_status: "pending",
-    });
+    // Limpiar bookings pendientes antiguos (más de 1 hora) para este slot
+    const oneHourAgo = new Date();
+    oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+    
+    await supabase
+      .from("bookings")
+      .delete()
+      .eq("slot_id", parseInt(slotId))
+      .eq("payment_status", "pending")
+      .lt("created_at", oneHourAgo.toISOString());
 
-    if (!booking) {
+    // Verificar si ya existe un booking para este slot (pending o paid)
+    const { data: existingBooking, error: existingBookingError } = await supabase
+      .from("bookings")
+      .select("*")
+      .eq("slot_id", parseInt(slotId))
+      .in("payment_status", ["pending", "paid"])
+      .maybeSingle();
+
+    if (existingBookingError) {
+      console.error("Error checking existing booking:", existingBookingError);
       return NextResponse.json(
-        { error: "Error al crear la reserva" },
+        { error: "Error al verificar disponibilidad" },
+        { status: 500 }
+      );
+    }
+
+    if (existingBooking) {
+      return NextResponse.json(
+        { error: "Este slot ya está reservado. Por favor, selecciona otro horario." },
+        { status: 400 }
+      );
+    }
+
+    // Crear booking pendiente usando el cliente del servidor
+    const { data: booking, error: bookingError } = await supabase
+      .from("bookings")
+      .insert({
+        customer_email: customerEmail,
+        customer_name: customerName,
+        service_id: parseInt(serviceId),
+        slot_id: parseInt(slotId),
+        payment_status: "pending",
+        stripe_session_id: null,
+        zoom_link: null,
+        gcal_event_id: null,
+      } as any)
+      .select()
+      .single();
+
+    if (bookingError || !booking) {
+      console.error("Error creating booking:", bookingError);
+      
+      // Si el error es por constraint único, significa que otro proceso creó un booking
+      if (bookingError?.message?.includes("unique_slot_booking") || 
+          bookingError?.code === "23505") {
+        return NextResponse.json(
+          { error: "Este slot fue reservado por otro usuario. Por favor, selecciona otro horario." },
+          { status: 409 } // Conflict
+        );
+      }
+      
+      return NextResponse.json(
+        { error: "Error al crear la reserva", details: bookingError?.message },
         { status: 500 }
       );
     }
 
     // Crear sesión de Stripe Checkout
+    // Stripe requiere el precio en centavos para USD (multiplicar por 100)
+    const priceInCents = Math.round(service.price * 100);
+    
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
           price_data: {
-            currency: "clp",
+            currency: "usd",
             product_data: {
               name: service.title,
               description: service.description,
             },
-            unit_amount: service.price,
+            unit_amount: priceInCents,
           },
           quantity: 1,
         },
@@ -103,7 +174,16 @@ export async function GET(request: NextRequest) {
     });
 
     // El stripe_session_id se actualizará en el webhook cuando se complete el pago
-    // Por ahora, guardamos el session_id en metadata del booking
+    // Verificar si la solicitud viene de fetch (tiene header Accept: application/json) o navegador directo
+    const acceptHeader = request.headers.get("accept") || "";
+    const isJsonRequest = acceptHeader.includes("application/json");
+
+    if (isJsonRequest && session.url) {
+      // Si es una solicitud JSON (desde el modal), devolver la URL
+      return NextResponse.json({ url: session.url });
+    }
+
+    // Si es una solicitud directa del navegador, redirigir
     return NextResponse.redirect(session.url || "/");
   } catch (error: any) {
     console.error("Error creating checkout session:", error);

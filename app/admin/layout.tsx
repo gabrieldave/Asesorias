@@ -1,37 +1,15 @@
 import { redirect } from "next/navigation";
-import { createServerClient } from "@/lib/supabase/server";
-
-// Lista de emails permitidos para acceso admin (desde variable de entorno)
-// Puedes configurar múltiples emails separándolos por comas
-function getAllowedAdminEmails(): string[] {
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "";
-  return adminEmail
-    .split(",")
-    .map((email) => email.trim())
-    .filter((email) => email !== "");
-}
+import { getAdminSession } from "@/lib/auth/session";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const session = await getAdminSession();
 
   if (!session) {
     redirect("/login");
-  }
-
-  // Verificar que el email del usuario esté en la lista de permitidos
-  const userEmail = session.user?.email || "";
-  const allowedEmails = getAllowedAdminEmails();
-  if (allowedEmails.length > 0 && !allowedEmails.includes(userEmail)) {
-    // Cerrar sesión y redirigir si no está autorizado
-    await supabase.auth.signOut();
-    redirect("/login?error=unauthorized");
   }
 
   return <>{children}</>;

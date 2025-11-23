@@ -64,7 +64,7 @@ export default function Services() {
     );
   };
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-border">
+    <section id="services-section" className="py-20 px-4 sm:px-6 lg:px-8 border-b border-border">
       <div className="container mx-auto">
         {/* Section Header */}
         <motion.div
@@ -136,9 +136,9 @@ export default function Services() {
                   {/* Price */}
                   <div className="mb-4">
                     <span className="text-3xl font-bold text-profit">
-                      ${service.price.toLocaleString("es-CL")}
+                      ${service.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
-                    <span className="text-foreground/70 ml-2">CLP</span>
+                    <span className="text-foreground/70 ml-2">USD</span>
                   </div>
 
                   {/* Description */}

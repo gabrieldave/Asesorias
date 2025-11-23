@@ -3,7 +3,8 @@ import Stripe from "stripe";
 import { createServerClient } from "@/lib/supabase/server";
 import { updateBooking, updateSlot } from "@/lib/supabase/helpers";
 import { Resend } from "resend";
-import type { Booking, Service } from "@/types/database.types";
+import { createZoomMeeting } from "@/lib/zoom";
+import type { Booking, Service, AvailabilitySlot } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
 
@@ -87,23 +88,51 @@ export async function POST(request: NextRequest) {
       // Marcar slot como reservado
       await updateSlot(bookingData.slot_id, true);
 
-      // Obtener servicio
-      const { data: serviceData } = await supabase
-        .from("services")
-        .select("*")
-        .eq("id", bookingData.service_id)
-        .single();
-      const service = serviceData as Service | null;
+      // Obtener servicio y slot
+      const [serviceResult, slotResult] = await Promise.all([
+        supabase
+          .from("services")
+          .select("*")
+          .eq("id", bookingData.service_id)
+          .single(),
+        supabase
+          .from("availability_slots")
+          .select("*")
+          .eq("id", bookingData.slot_id)
+          .single(),
+      ]);
 
-      // Crear Zoom meeting (placeholder - requiere configuración)
+      const service = serviceResult.data as Service | null;
+      const slot = slotResult.data as AvailabilitySlot | null;
+
+      // Crear Zoom meeting
       let zoomLink = null;
-      if (process.env.ZOOM_CLIENT_ID && process.env.ZOOM_CLIENT_SECRET) {
+      if (
+        process.env.ZOOM_CLIENT_ID &&
+        process.env.ZOOM_CLIENT_SECRET &&
+        process.env.ZOOM_ACCOUNT_ID &&
+        slot
+      ) {
         try {
-          // TODO: Implementar creación de Zoom meeting
-          // zoomLink = await createZoomMeeting(...);
+          const startTime = new Date(slot.start_time);
+          const endTime = new Date(slot.end_time);
+          const duration = Math.round((endTime.getTime() - startTime.getTime()) / 60000); // minutos
+
+          zoomLink = await createZoomMeeting(
+            `${service?.title || "Mentoría"} - ${bookingData.customer_name}`,
+            startTime,
+            duration,
+            bookingData.customer_email
+          );
+
+          if (zoomLink) {
+            console.log("Zoom meeting created:", zoomLink);
+          }
         } catch (error) {
           console.error("Error creating Zoom meeting:", error);
         }
+      } else {
+        console.log("Zoom not configured or slot not found");
       }
 
       // Crear evento en Google Calendar (placeholder - requiere configuración)
@@ -155,7 +184,7 @@ export async function POST(request: NextRequest) {
                 <p><strong>Cliente:</strong> ${bookingData.customer_name}</p>
                 <p><strong>Email:</strong> ${bookingData.customer_email}</p>
                 <p><strong>Servicio:</strong> ${service?.title || "N/A"}</p>
-                <p><strong>Precio:</strong> $${service?.price.toLocaleString("es-CL") || "N/A"} CLP</p>
+                <p><strong>Precio:</strong> $${service?.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "N/A"} USD</p>
               `,
             });
           }

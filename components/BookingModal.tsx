@@ -26,28 +26,91 @@ export default function BookingModal({
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       loadSlots();
+      setError(null);
+      setSelectedSlot(null);
+      setCustomerName("");
+      setCustomerEmail("");
     }
   }, [isOpen]);
 
   const loadSlots = async () => {
     setLoading(true);
     try {
-      const availableSlots = await getAvailableSlots();
-      setSlots(availableSlots);
+      // Usar el endpoint API que excluye slots con bookings activos
+      const response = await fetch("/api/slots/available");
+      const data = await response.json();
+      if (response.ok && data.slots) {
+        setSlots(data.slots);
+      } else {
+        // Fallback a la función original si el endpoint falla
+        const availableSlots = await getAvailableSlots();
+        setSlots(availableSlots);
+      }
     } catch (error) {
       console.error("Error loading slots:", error);
+      // Fallback a la función original si hay error
+      try {
+        const availableSlots = await getAvailableSlots();
+        setSlots(availableSlots);
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleConfirm = () => {
-    if (selectedSlot && customerName && customerEmail) {
-      onConfirm(selectedSlot, customerName, customerEmail);
+  const handleConfirm = async () => {
+    if (!selectedSlot || !customerName || !customerEmail) return;
+
+    setProcessing(true);
+    setError(null);
+
+    try {
+      // Hacer fetch a la API en lugar de redirigir directamente
+      const response = await fetch(
+        `/api/checkout/create?serviceId=${service.id}&slotId=${selectedSlot}&name=${encodeURIComponent(customerName)}&email=${encodeURIComponent(customerEmail)}`,
+        {
+          headers: {
+            Accept: "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Si hay error, mostrarlo y recargar slots
+        setError(data.error || "Error al procesar la reserva");
+        
+        // Recargar slots disponibles después de un breve delay
+        setTimeout(() => {
+          loadSlots();
+          setSelectedSlot(null);
+        }, 1000);
+        
+        return;
+      }
+
+      // Si hay URL en la respuesta, redirigir a Stripe
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err: any) {
+      console.error("Error processing booking:", err);
+      setError("Error de conexión. Por favor, intenta de nuevo.");
+      setTimeout(() => {
+        loadSlots();
+        setSelectedSlot(null);
+      }, 1000);
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -77,7 +140,7 @@ export default function BookingModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-2xl w-full bg-background border-terminal z-50 p-6 sm:p-8 max-h-[90vh] overflow-y-auto"
+            className="fixed top-[5%] sm:top-[10%] left-1/2 -translate-x-1/2 max-w-2xl w-[calc(100%-2rem)] sm:w-full bg-background border-terminal z-50 p-6 sm:p-8 max-h-[85vh] sm:max-h-[80vh] overflow-y-auto"
           >
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold uppercase tracking-wider">
@@ -95,7 +158,7 @@ export default function BookingModal({
               {/* Información del servicio */}
               <div className="border-terminal p-4">
                 <p className="text-profit text-2xl font-bold mb-2">
-                  ${service.price.toLocaleString("es-CL")} CLP
+                  ${service.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                 </p>
                 <p className="text-foreground/70 text-sm">{service.description}</p>
               </div>
@@ -138,6 +201,13 @@ export default function BookingModal({
                 )}
               </div>
 
+              {/* Mensaje de error */}
+              {error && (
+                <div className="border border-loss bg-loss/10 text-loss p-4 text-sm">
+                  {error}
+                </div>
+              )}
+
               {/* Formulario de cliente */}
               {selectedSlot && (
                 <motion.div
@@ -175,10 +245,10 @@ export default function BookingModal({
 
                   <button
                     onClick={handleConfirm}
-                    disabled={!customerName || !customerEmail}
+                    disabled={!customerName || !customerEmail || processing}
                     className="w-full py-3 bg-profit text-background font-semibold uppercase tracking-wider text-sm border-terminal hover-terminal disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Continuar al Pago
+                    {processing ? "Procesando..." : "Continuar al Pago"}
                   </button>
                 </motion.div>
               )}
