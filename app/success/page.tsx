@@ -24,42 +24,59 @@ function SuccessPageContent() {
     loadBookingData();
   }, [sessionId]);
 
-  const loadBookingData = async () => {
+  const loadBookingData = async (retryCount = 0) => {
     try {
       if (!sessionId) {
         setLoading(false);
         return;
       }
 
-      const supabase = createBrowserClient();
+      // Usar el endpoint de API que obtiene el booking desde Stripe metadata
+      const response = await fetch(`/api/checkout/get-booking?session_id=${sessionId}`);
+      const data = await response.json();
 
-      // Buscar booking por session_id
-      const { data: bookingData, error: bookingError } = await (supabase.from("bookings") as any)
-        .select("*")
-        .eq("stripe_session_id", sessionId)
-        .single();
-
-      if (bookingError || !bookingData) {
-        console.error("Error loading booking:", bookingError);
+      if (!response.ok) {
+        // Si no se encuentra y aún no hemos hecho todos los reintentos, esperar y reintentar
+        // El webhook puede tardar en procesarse
+        if (retryCount < 5) {
+          console.log(`Reserva no encontrada, reintentando... (${retryCount + 1}/5)`);
+          setTimeout(() => {
+            loadBookingData(retryCount + 1);
+          }, 2000); // Esperar 2 segundos antes de reintentar
+          return;
+        }
+        
+        console.error("Error loading booking:", data.error);
         setLoading(false);
         return;
       }
 
-      setBooking(bookingData as Booking);
-
-      // Obtener servicio
-      const { data: serviceData, error: serviceError } = await (supabase.from("services") as any)
-        .select("*")
-        .eq("id", bookingData.service_id)
-        .single();
-
-      if (!serviceError && serviceData) {
-        setService(serviceData as Service);
+      if (data.booking) {
+        setBooking(data.booking as Booking);
+        if (data.service) {
+          setService(data.service as Service);
+        }
+        setLoading(false);
+      } else {
+        // Si no hay booking pero la respuesta fue OK, reintentar
+        if (retryCount < 5) {
+          setTimeout(() => {
+            loadBookingData(retryCount + 1);
+          }, 2000);
+        } else {
+          setLoading(false);
+        }
       }
     } catch (error) {
       console.error("Error loading data:", error);
-    } finally {
-      setLoading(false);
+      // Si hay error y aún no hemos hecho todos los reintentos, intentar de nuevo
+      if (retryCount < 5) {
+        setTimeout(() => {
+          loadBookingData(retryCount + 1);
+        }, 2000);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
