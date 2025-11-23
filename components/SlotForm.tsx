@@ -4,6 +4,10 @@ import { useState } from "react";
 import { X, Clock, Calendar, Repeat } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { zonedTimeToUtc, utcToZonedTime } from "date-fns-tz";
+import { formatInMexico } from "@/lib/utils/timezone";
+
+const MEXICO_TIMEZONE = "America/Mexico_City";
 
 interface SlotFormProps {
   isOpen: boolean;
@@ -65,14 +69,18 @@ export default function SlotForm({ isOpen, onClose, onSave }: SlotFormProps) {
 
         const endDate = new Date(startDate.getTime() + duration * 60000);
 
+        // Convertir de hora de México a UTC para guardar
+        const startUTC = zonedTimeToUtc(startDate, MEXICO_TIMEZONE);
+        const endUTC = zonedTimeToUtc(endDate, MEXICO_TIMEZONE);
+
         response = await fetch("/api/admin/slots/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            start_time: startDate.toISOString(),
-            end_time: endDate.toISOString(),
+            start_time: startUTC.toISOString(),
+            end_time: endUTC.toISOString(),
           }),
         });
       } else {
@@ -98,6 +106,11 @@ export default function SlotForm({ isOpen, onClose, onSave }: SlotFormProps) {
         const [startHour, startMin] = startTime.split(":").map(Number);
         const [endHour, endMin] = endTime.split(":").map(Number);
 
+        // Convertir las fechas a UTC interpretándolas como hora de México
+        // Las fechas del DatePicker están en hora local, pero las interpretamos como México
+        const startRangeUTC = zonedTimeToUtc(startRange, MEXICO_TIMEZONE);
+        const endRangeUTC = zonedTimeToUtc(endRange, MEXICO_TIMEZONE);
+
         response = await fetch("/api/admin/slots/create", {
           method: "POST",
           headers: {
@@ -106,8 +119,8 @@ export default function SlotForm({ isOpen, onClose, onSave }: SlotFormProps) {
           body: JSON.stringify({
             mode: "recurring",
             selectedDays,
-            startRange: startRange.toISOString(),
-            endRange: endRange.toISOString(),
+            startRange: startRangeUTC.toISOString(),
+            endRange: endRangeUTC.toISOString(),
             startTime: `${startHour.toString().padStart(2, "0")}:${startMin.toString().padStart(2, "0")}`,
             endTime: `${endHour.toString().padStart(2, "0")}:${endMin.toString().padStart(2, "0")}`,
             duration,
@@ -216,14 +229,7 @@ export default function SlotForm({ isOpen, onClose, onSave }: SlotFormProps) {
             </div>
             {startDate && (
               <p className="mt-2 text-xs text-foreground/50 font-mono">
-                Seleccionado: {startDate.toLocaleString("es-CL", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                Seleccionado (Hora de México): {formatInMexico(startDate, "EEEE, d 'de' MMMM 'de' yyyy, h:mm a")}
               </p>
             )}
           </div>
@@ -261,12 +267,12 @@ export default function SlotForm({ isOpen, onClose, onSave }: SlotFormProps) {
 
           {startDate && (
             <div className="p-4 border-terminal bg-background/50">
-              <p className="text-sm text-foreground/70 mb-1">Resumen del slot:</p>
+              <p className="text-sm text-foreground/70 mb-1">Resumen del slot (Hora de México):</p>
               <p className="font-mono text-sm text-profit">
-                Inicio: {startDate.toLocaleString("es-CL")}
+                Inicio: {formatInMexico(startDate, "dd/MM/yyyy, h:mm a")}
               </p>
               <p className="font-mono text-sm text-profit">
-                Fin: {new Date(startDate.getTime() + duration * 60000).toLocaleString("es-CL")}
+                Fin: {formatInMexico(new Date(startDate.getTime() + duration * 60000), "dd/MM/yyyy, h:mm a")}
               </p>
               <p className="font-mono text-xs text-foreground/50 mt-2">
                 Duración: {duration} minutos
@@ -309,7 +315,7 @@ export default function SlotForm({ isOpen, onClose, onSave }: SlotFormProps) {
                     selected={startRange}
                     onChange={(date) => setStartRange(date)}
                     dateFormat="dd/MM/yyyy"
-                    minDate={new Date()}
+                    minDate={utcToZonedTime(new Date(), MEXICO_TIMEZONE)}
                     className="w-full px-4 py-3 bg-background border-terminal text-foreground font-mono focus:outline-none focus:border-profit"
                     wrapperClassName="w-full"
                     required
@@ -323,7 +329,7 @@ export default function SlotForm({ isOpen, onClose, onSave }: SlotFormProps) {
                     selected={endRange}
                     onChange={(date) => setEndRange(date)}
                     dateFormat="dd/MM/yyyy"
-                    minDate={startRange || new Date()}
+                    minDate={startRange || utcToZonedTime(new Date(), MEXICO_TIMEZONE)}
                     className="w-full px-4 py-3 bg-background border-terminal text-foreground font-mono focus:outline-none focus:border-profit"
                     wrapperClassName="w-full"
                     required
@@ -422,21 +428,21 @@ export default function SlotForm({ isOpen, onClose, onSave }: SlotFormProps) {
               {/* Resumen recurrente */}
               {startRange && endRange && selectedDays.length > 0 && (
                 <div className="p-4 border-terminal bg-background/50">
-                  <p className="text-sm text-foreground/70 mb-2">Resumen de slots recurrentes:</p>
+                  <p className="text-sm text-foreground/70 mb-2">Resumen de slots recurrentes (Hora de México):</p>
                   <p className="font-mono text-sm text-profit">
                     Días: {selectedDays.map(d => DAYS_OF_WEEK[d].label).join(", ")}
                   </p>
                   <p className="font-mono text-sm text-profit">
-                    Desde: {startRange.toLocaleDateString("es-CL")} hasta {endRange.toLocaleDateString("es-CL")}
+                    Desde: {formatInMexico(startRange, "dd/MM/yyyy")} hasta {formatInMexico(endRange, "dd/MM/yyyy")}
                   </p>
                   <p className="font-mono text-sm text-profit">
-                    Horario: {startTime} - {endTime}
+                    Horario: {startTime} - {endTime} (Hora de México)
                   </p>
                   <p className="font-mono text-xs text-foreground/50 mt-2">
                     Duración: {duration} minutos por slot
                   </p>
                   <p className="font-mono text-xs text-foreground/50 mt-1">
-                    Se crearán múltiples slots automáticamente
+                    Los clientes verán estos horarios convertidos a su zona horaria
                   </p>
                 </div>
               )}

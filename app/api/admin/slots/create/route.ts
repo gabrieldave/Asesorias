@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getAdminSession } from "@/lib/auth/session";
+import { zonedTimeToUtc, utcToZonedTime } from "date-fns-tz";
 
 export const dynamic = "force-dynamic";
 
+// Zona horaria de México
+const MEXICO_TIMEZONE = "America/Mexico_City";
+
 // Función para generar slots recurrentes
+// Las horas se interpretan como hora de México y se convierten a UTC para guardar
 function generateRecurringSlots(
   selectedDays: number[],
   startRange: Date,
@@ -15,7 +20,7 @@ function generateRecurringSlots(
 ): Array<{ start_time: string; end_time: string }> {
   const slots: Array<{ start_time: string; end_time: string }> = [];
   
-  // Parsear horas en formato HH:mm (24 horas)
+  // Parsear horas en formato HH:mm (24 horas) - estas son horas de México
   const [startHour, startMin] = startTime.split(":").map(Number);
   const [endHour, endMin] = endTime.split(":").map(Number);
   
@@ -24,54 +29,54 @@ function generateRecurringSlots(
     throw new Error("Las horas deben estar entre 00:00 y 23:59");
   }
   
-  // Si endHour < startHour, asumimos que el horario de fin es del mismo día
-  // (no cruzamos medianoche)
-  const endHourAdjusted = endHour < startHour ? endHour + 24 : endHour;
+  // Convertir las fechas de rango a hora de México
+  const startDateMexico = utcToZonedTime(startRange, MEXICO_TIMEZONE);
+  const endDateMexico = utcToZonedTime(endRange, MEXICO_TIMEZONE);
   
-  const startDate = new Date(startRange);
-  startDate.setUTCHours(0, 0, 0, 0);
+  // Resetear a medianoche en hora de México
+  startDateMexico.setHours(0, 0, 0, 0);
+  endDateMexico.setHours(23, 59, 59, 999);
   
-  const endDate = new Date(endRange);
-  endDate.setUTCHours(23, 59, 59, 999);
+  const currentDate = new Date(startDateMexico);
   
-  const currentDate = new Date(startDate);
-  
-  while (currentDate <= endDate) {
+  while (currentDate <= endDateMexico) {
     const dayOfWeek = currentDate.getDay();
     
     if (selectedDays.includes(dayOfWeek)) {
-      // Crear slots desde startTime hasta endTime con la duración especificada
-      // Usar UTC para evitar problemas de zona horaria
-      let slotStart = new Date(currentDate);
-      slotStart.setUTCHours(startHour, startMin, 0, 0);
+      // Crear slots desde startTime hasta endTime en hora de México
+      let slotStartMexico = new Date(currentDate);
+      slotStartMexico.setHours(startHour, startMin, 0, 0);
       
-      const slotEndTime = new Date(currentDate);
-      // Si el horario de fin es menor que el de inicio, asumimos que es del mismo día
-      if (endHour < startHour) {
-        // Esto no debería pasar normalmente, pero lo manejamos
-        slotEndTime.setUTCHours(endHour + 24, endMin, 0, 0);
-      } else {
-        slotEndTime.setUTCHours(endHour, endMin, 0, 0);
+      const slotEndTimeMexico = new Date(currentDate);
+      slotEndTimeMexico.setHours(endHour, endMin, 0, 0);
+      
+      // Si el horario de fin es menor que el de inicio, es del día siguiente
+      if (endHour < startHour || (endHour === startHour && endMin < startMin)) {
+        slotEndTimeMexico.setDate(slotEndTimeMexico.getDate() + 1);
       }
       
-      while (slotStart < slotEndTime) {
-        const slotEnd = new Date(slotStart.getTime() + duration * 60000);
+      while (slotStartMexico < slotEndTimeMexico) {
+        const slotEndMexico = new Date(slotStartMexico.getTime() + duration * 60000);
         
         // Solo crear slots que no excedan el horario de fin
-        if (slotEnd <= slotEndTime) {
+        if (slotEndMexico <= slotEndTimeMexico) {
+          // Convertir de hora de México a UTC para guardar en la base de datos
+          const slotStartUTC = zonedTimeToUtc(slotStartMexico, MEXICO_TIMEZONE);
+          const slotEndUTC = zonedTimeToUtc(slotEndMexico, MEXICO_TIMEZONE);
+          
           slots.push({
-            start_time: slotStart.toISOString(),
-            end_time: slotEnd.toISOString(),
+            start_time: slotStartUTC.toISOString(),
+            end_time: slotEndUTC.toISOString(),
           });
         }
         
         // Mover al siguiente slot
-        slotStart = new Date(slotEnd);
+        slotStartMexico = new Date(slotEndMexico);
       }
     }
     
     // Avanzar al siguiente día
-    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+    currentDate.setDate(currentDate.getDate() + 1);
   }
   
   return slots;
@@ -160,10 +165,11 @@ export async function POST(request: NextRequest) {
       }
 
       // Generar todos los slots
+      // Las horas se interpretan como hora de México
       const slots = generateRecurringSlots(
         selectedDays,
-        startRangeDate,
-        endRangeDate,
+        new Date(startRange), // Ya viene como ISO string, se convertirá a México
+        new Date(endRange),   // Ya viene como ISO string, se convertirá a México
         startTime,
         endTime,
         duration || 60

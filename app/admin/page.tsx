@@ -9,6 +9,8 @@ import type { Service, AvailabilitySlot, Booking } from "@/types/database.types"
 import { getActiveServices } from "@/lib/supabase/queries";
 import ServiceForm from "@/components/ServiceForm";
 import SlotForm from "@/components/SlotForm";
+import { formatInMexico } from "@/lib/utils/timezone";
+import { parseISO } from "date-fns";
 
 export default function AdminDashboard() {
   const [services, setServices] = useState<Service[]>([]);
@@ -344,10 +346,10 @@ export default function AdminDashboard() {
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <p className="font-mono text-sm">
-                          {new Date(slot.start_time).toLocaleString("es-CL")}
+                          {formatInMexico(slot.start_time, "dd/MM/yyyy, h:mm:ss a")}
                         </p>
                         <p className="font-mono text-xs text-foreground/50">
-                          {new Date(slot.end_time).toLocaleString("es-CL")}
+                          {formatInMexico(slot.end_time, "dd/MM/yyyy, h:mm:ss a")}
                         </p>
                       </div>
                       <span
