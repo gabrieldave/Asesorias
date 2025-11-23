@@ -64,9 +64,16 @@ export default function AdminDashboard() {
     try {
       const response = await fetch(`/api/admin/slots/delete?id=${id}`, {
         method: "DELETE",
+        credentials: "include", // Asegurar que se envíen las cookies
       });
 
       const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Error response:", response.status, data);
+        alert(`Error al eliminar el slot (${response.status}): ${data.error || "Error desconocido"}`);
+        return;
+      }
 
       if (data.success) {
         loadData();
@@ -75,7 +82,7 @@ export default function AdminDashboard() {
       }
     } catch (error: any) {
       console.error("Error deleting slot:", error);
-      alert("Error al eliminar el slot");
+      alert("Error al eliminar el slot: " + (error.message || "Error de conexión"));
     }
   };
 

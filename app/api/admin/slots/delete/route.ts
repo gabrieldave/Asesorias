@@ -1,10 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
+import { getAdminSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Verificar que el usuario es admin
+    const adminSession = await getAdminSession();
+    console.log("🔐 Admin session check:", adminSession ? "✅ Authenticated" : "❌ Not authenticated");
+    
+    if (!adminSession) {
+      console.error("❌ Unauthorized: No admin session found");
+      return NextResponse.json(
+        { error: "No autorizado. Se requiere sesión de administrador." },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get("id");
 
@@ -15,7 +28,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient();
 
     // Verificar que el slot no esté reservado
     const { data: slot, error: fetchError } = await (supabase.from("availability_slots") as any)
