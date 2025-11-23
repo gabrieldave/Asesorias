@@ -47,9 +47,12 @@ export async function createGoogleCalendarEvent(
     const accessToken = tokenData.access_token;
 
     if (!accessToken) {
-      console.error("No access token received from Google");
+      console.error("❌ No access token received from Google");
+      console.error("Token response:", tokenData);
       return null;
     }
+
+    console.log("✅ Access token obtenido exitosamente");
 
     // Formatear fechas en formato RFC3339 para Google Calendar
     const formatDate = (date: Date): string => {
@@ -63,40 +66,51 @@ export async function createGoogleCalendarEvent(
     }
     eventDescription += `\n\nCliente: ${attendeeName} (${attendeeEmail})`;
 
+    // Preparar datos del evento
+    const eventData = {
+      summary: title,
+      description: eventDescription,
+      start: {
+        dateTime: formatDate(startTime),
+        timeZone: "America/Mexico_City",
+      },
+      end: {
+        dateTime: formatDate(endTime),
+        timeZone: "America/Mexico_City",
+      },
+      attendees: [
+        {
+          email: attendeeEmail,
+          displayName: attendeeName,
+        },
+      ],
+      sendUpdates: "all", // Enviar invitaciones a todos los attendees
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: "email", minutes: 24 * 60 }, // 1 día antes
+          { method: "popup", minutes: 15 }, // 15 minutos antes
+        ],
+      },
+    };
+
+    console.log("📅 Creando evento con datos:", {
+      title: eventData.summary,
+      start: eventData.start.dateTime,
+      end: eventData.end.dateTime,
+      attendees: eventData.attendees.map(a => a.email),
+    });
+
     // Crear evento en Google Calendar
     const eventResponse = await fetch(
-      "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all",
       {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          summary: title,
-          description: eventDescription,
-          start: {
-            dateTime: formatDate(startTime),
-            timeZone: "America/Mexico_City",
-          },
-          end: {
-            dateTime: formatDate(endTime),
-            timeZone: "America/Mexico_City",
-          },
-          attendees: [
-            {
-              email: attendeeEmail,
-              displayName: attendeeName,
-            },
-          ],
-          reminders: {
-            useDefault: false,
-            overrides: [
-              { method: "email", minutes: 24 * 60 }, // 1 día antes
-              { method: "popup", minutes: 15 }, // 15 minutos antes
-            ],
-          },
-        }),
+        body: JSON.stringify(eventData),
       }
     );
 
@@ -108,10 +122,19 @@ export async function createGoogleCalendarEvent(
     }
 
     const eventData = await eventResponse.json();
-    console.log("✅ Evento creado en Google Calendar:", eventData.id);
+    console.log("✅ Evento creado en Google Calendar exitosamente!");
+    console.log("📅 Event ID:", eventData.id);
     console.log("📅 Título:", eventData.summary);
     console.log("🕐 Inicio:", eventData.start?.dateTime);
     console.log("🕐 Fin:", eventData.end?.dateTime);
+    console.log("👥 Attendees:", eventData.attendees?.map((a: any) => `${a.email} (${a.responseStatus || 'pending'})`).join(', '));
+    console.log("🔗 Link del evento:", eventData.htmlLink);
+    
+    // Verificar que el evento tenga el link
+    if (eventData.htmlLink) {
+      console.log("✅ Link del evento disponible:", eventData.htmlLink);
+    }
+    
     return eventData.id || null;
   } catch (error: any) {
     console.error("❌ Error inesperado creando evento en Google Calendar:", error);
