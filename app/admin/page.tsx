@@ -28,13 +28,11 @@ export default function AdminDashboard() {
   const loadData = async () => {
     try {
       const [servicesData, slotsData, bookingsData] = await Promise.all([
-        supabase.from("services").select("*").order("created_at", { ascending: false }),
-        supabase
-          .from("availability_slots")
+        (supabase.from("services") as any).select("*").order("created_at", { ascending: false }),
+        (supabase.from("availability_slots") as any)
           .select("*")
           .order("start_time", { ascending: true }),
-        supabase
-          .from("bookings")
+        (supabase.from("bookings") as any)
           .select("*")
           .order("created_at", { ascending: false }),
       ]);

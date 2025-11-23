@@ -3,8 +3,7 @@ import type { Service, AvailabilitySlot, Booking } from "@/types/database.types"
 
 // Obtener todos los servicios activos
 export async function getActiveServices(): Promise<Service[]> {
-  const { data, error } = await supabase
-    .from("services")
+  const { data, error } = await (supabase.from("services") as any)
     .select("*")
     .eq("active", true)
     .order("price", { ascending: true });
@@ -19,8 +18,7 @@ export async function getActiveServices(): Promise<Service[]> {
 
 // Obtener un servicio por ID
 export async function getServiceById(id: number): Promise<Service | null> {
-  const { data, error } = await supabase
-    .from("services")
+  const { data, error } = await (supabase.from("services") as any)
     .select("*")
     .eq("id", id)
     .eq("active", true)
@@ -36,8 +34,7 @@ export async function getServiceById(id: number): Promise<Service | null> {
 
 // Obtener slots disponibles
 export async function getAvailableSlots(): Promise<AvailabilitySlot[]> {
-  const { data, error } = await supabase
-    .from("availability_slots")
+  const { data, error } = await (supabase.from("availability_slots") as any)
     .select("*")
     .eq("is_booked", false)
     .gt("start_time", new Date().toISOString())
@@ -53,8 +50,7 @@ export async function getAvailableSlots(): Promise<AvailabilitySlot[]> {
 
 // Contar slots disponibles para un servicio
 export async function countAvailableSlots(): Promise<number> {
-  const { count, error } = await supabase
-    .from("availability_slots")
+  const { count, error } = await (supabase.from("availability_slots") as any)
     .select("id", { count: "exact", head: true })
     .eq("is_booked", false)
     .gt("start_time", new Date().toISOString());
@@ -76,15 +72,14 @@ export async function createBooking(
     slot_id: number;
   }
 ): Promise<Booking | null> {
-  const { data, error } = await supabase
-    .from("bookings")
+  const { data, error } = await (supabase.from("bookings") as any)
     .insert({
       ...booking,
       stripe_session_id: booking.stripe_session_id || null,
       payment_status: booking.payment_status || "pending",
       zoom_link: booking.zoom_link || null,
       gcal_event_id: booking.gcal_event_id || null,
-    } as any)
+    })
     .select()
     .single();
 

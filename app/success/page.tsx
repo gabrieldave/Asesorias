@@ -26,11 +26,15 @@ export default function SuccessPage() {
 
   const loadBookingData = async () => {
     try {
+      if (!sessionId) {
+        setLoading(false);
+        return;
+      }
+
       const supabase = createBrowserClient();
 
       // Buscar booking por session_id
-      const { data: bookingData, error: bookingError } = await supabase
-        .from("bookings")
+      const { data: bookingData, error: bookingError } = await (supabase.from("bookings") as any)
         .select("*")
         .eq("stripe_session_id", sessionId)
         .single();
@@ -44,8 +48,7 @@ export default function SuccessPage() {
       setBooking(bookingData as Booking);
 
       // Obtener servicio
-      const { data: serviceData, error: serviceError } = await supabase
-        .from("services")
+      const { data: serviceData, error: serviceError } = await (supabase.from("services") as any)
         .select("*")
         .eq("id", bookingData.service_id)
         .single();
