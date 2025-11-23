@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createServerClient } from "@/lib/supabase/server";
-import { updateBooking, updateSlot } from "@/lib/supabase/helpers";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { Resend } from "resend";
 import { createZoomMeeting } from "@/lib/zoom";
+import { createGoogleCalendarEvent } from "@/lib/google-calendar";
 import type { Booking, Service, AvailabilitySlot } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
@@ -47,44 +47,92 @@ export async function POST(request: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session;
 
     try {
-      const supabase = await createServerClient();
+      console.log("🔔 Webhook recibido: checkout.session.completed");
+      console.log("📋 Session ID:", session.id);
+      console.log("📋 Metadata:", session.metadata);
+
+      const supabase = createServiceRoleClient();
 
       // Obtener el booking usando metadata o session_id
       const bookingId = session.metadata?.booking_id;
       let booking = null;
 
       if (bookingId) {
+        console.log("🔍 Buscando booking por ID:", bookingId);
         const { data, error } = await (supabase.from("bookings") as any)
           .select("*")
           .eq("id", parseInt(bookingId))
           .single();
-        if (!error && data) booking = data;
+        if (!error && data) {
+          booking = data;
+          console.log("✅ Booking encontrado por ID:", booking.id);
+        } else {
+          console.error("❌ Error buscando por ID:", error);
+        }
       }
 
       // Si no se encuentra por metadata, buscar por session_id
       if (!booking) {
+        console.log("🔍 Buscando booking por session_id:", session.id);
         const { data, error } = await (supabase.from("bookings") as any)
           .select("*")
           .eq("stripe_session_id", session.id)
           .single();
-        if (!error && data) booking = data as Booking;
+        if (!error && data) {
+          booking = data as Booking;
+          console.log("✅ Booking encontrado por session_id:", booking.id);
+        } else {
+          console.error("❌ Error buscando por session_id:", error);
+        }
       }
 
       if (!booking) {
-        console.error("Booking not found for session:", session.id);
+        console.error("❌ Booking not found for session:", session.id);
         return NextResponse.json({ error: "Booking not found" }, { status: 404 });
       }
 
       const bookingData = booking as Booking;
+      console.log("📝 Booking actual:", {
+        id: bookingData.id,
+        payment_status: bookingData.payment_status,
+        stripe_session_id: bookingData.stripe_session_id,
+      });
 
-      // Actualizar booking a pagado y guardar session_id
-      await updateBooking(bookingData.id, {
-        payment_status: "paid",
-        stripe_session_id: session.id,
+      // Actualizar booking a pagado y guardar session_id usando service role
+      console.log("💾 Actualizando booking a 'paid'...");
+      const { data: updatedBooking, error: updateError } = await (supabase.from("bookings") as any)
+        .update({
+          payment_status: "paid",
+          stripe_session_id: session.id,
+        })
+        .eq("id", bookingData.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error("❌ Error actualizando booking:", updateError);
+        return NextResponse.json(
+          { error: "Error updating booking", details: updateError.message },
+          { status: 500 }
+        );
+      }
+
+      console.log("✅ Booking actualizado:", {
+        id: updatedBooking.id,
+        payment_status: updatedBooking.payment_status,
       });
 
       // Marcar slot como reservado
-      await updateSlot(bookingData.slot_id, true);
+      console.log("💾 Marcando slot como reservado...");
+      const { error: slotUpdateError } = await (supabase.from("availability_slots") as any)
+        .update({ is_booked: true })
+        .eq("id", bookingData.slot_id);
+
+      if (slotUpdateError) {
+        console.error("❌ Error actualizando slot:", slotUpdateError);
+      } else {
+        console.log("✅ Slot marcado como reservado");
+      }
 
       // Obtener servicio y slot
       const [serviceResult, slotResult] = await Promise.all([
@@ -131,23 +179,54 @@ export async function POST(request: NextRequest) {
         console.log("Zoom not configured or slot not found");
       }
 
-      // Crear evento en Google Calendar (placeholder - requiere configuración)
+      // Crear evento en Google Calendar
       let gcalEventId = null;
-      if (process.env.GOOGLE_CALENDAR_CLIENT_ID) {
+      if (
+        process.env.GOOGLE_CALENDAR_CLIENT_ID &&
+        process.env.GOOGLE_CALENDAR_CLIENT_SECRET &&
+        process.env.GOOGLE_CALENDAR_REFRESH_TOKEN &&
+        slot &&
+        service
+      ) {
         try {
-          // TODO: Implementar creación de evento en Google Calendar
-          // gcalEventId = await createGoogleCalendarEvent(...);
+          const startTime = new Date(slot.start_time);
+          const endTime = new Date(slot.end_time);
+
+          gcalEventId = await createGoogleCalendarEvent(
+            `${service.title} - ${bookingData.customer_name}`,
+            service.description || "",
+            startTime,
+            endTime,
+            bookingData.customer_email,
+            bookingData.customer_name,
+            zoomLink
+          );
+
+          if (gcalEventId) {
+            console.log("Google Calendar event created:", gcalEventId);
+          }
         } catch (error) {
           console.error("Error creating Google Calendar event:", error);
         }
+      } else {
+        console.log("Google Calendar not configured or slot/service not found");
       }
 
       // Actualizar booking con links
       if (zoomLink || gcalEventId) {
-        await updateBooking(bookingData.id, {
-          zoom_link: zoomLink,
-          gcal_event_id: gcalEventId,
-        });
+        console.log("💾 Actualizando booking con links...");
+        const { error: linksUpdateError } = await (supabase.from("bookings") as any)
+          .update({
+            zoom_link: zoomLink,
+            gcal_event_id: gcalEventId,
+          })
+          .eq("id", bookingData.id);
+
+        if (linksUpdateError) {
+          console.error("❌ Error actualizando links:", linksUpdateError);
+        } else {
+          console.log("✅ Links actualizados");
+        }
       }
 
       // Enviar emails (placeholder - requiere configuración)

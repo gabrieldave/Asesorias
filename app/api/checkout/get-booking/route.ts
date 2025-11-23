@@ -59,6 +59,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Si el pago está completo en Stripe pero el booking aún está pendiente,
+    // actualizar el estado manualmente (el webhook puede tardar)
+    if (session.payment_status === "paid" && booking.payment_status !== "paid") {
+      console.log("⚠️ Pago completado en Stripe pero booking está pendiente. Actualizando...");
+      
+      const { data: updatedBooking, error: updateError } = await (supabase.from("bookings") as any)
+        .update({
+          payment_status: "paid",
+          stripe_session_id: sessionId,
+        })
+        .eq("id", booking.id)
+        .select()
+        .single();
+
+      if (!updateError && updatedBooking) {
+        console.log("✅ Booking actualizado manualmente a 'paid'");
+        booking = updatedBooking;
+        
+        // También marcar el slot como reservado
+        await (supabase.from("availability_slots") as any)
+          .update({ is_booked: true })
+          .eq("id", booking.slot_id);
+      }
+    }
+
     // Obtener el servicio
     const { data: service, error: serviceError } = await (supabase.from("services") as any)
       .select("*")
