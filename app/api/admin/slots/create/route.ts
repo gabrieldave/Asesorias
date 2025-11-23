@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { mode, start_time, end_time, service_id } = body;
+    const { mode, start_time, end_time } = body;
 
     const supabase = createServiceRoleClient();
 
@@ -172,7 +172,6 @@ export async function POST(request: NextRequest) {
           return {
             start_time: slot.start_time,
             end_time: slot.end_time,
-            service_id: service_id || null,
             is_booked: false,
           };
         })
@@ -249,7 +248,6 @@ export async function POST(request: NextRequest) {
       .insert({
         start_time,
         end_time,
-        service_id: service_id || null,
         is_booked: false,
       })
       .select()

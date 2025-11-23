@@ -48,7 +48,6 @@ export interface Service {
 
 export interface AvailabilitySlot {
   id: number;
-  service_id: number | null;
   start_time: string;
   end_time: string;
   is_booked: boolean;
