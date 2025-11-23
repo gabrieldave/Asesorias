@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-mono antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .glow-profit {
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+  }
+  
+  .glow-loss {
+    text-shadow: 0 0 10px rgba(255, 59, 48, 0.5);
+  }
+  
+  .border-terminal {
+    @apply border border-border;
+    box-shadow: 0 0 0 1px rgba(0, 255, 65, 0.1);
+  }
+  
+  .hover-terminal {
+    @apply transition-all duration-200;
+  }
+  
+  .hover-terminal:hover {
+    @apply border-profit;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+  }
+}
+
