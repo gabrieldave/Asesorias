@@ -37,8 +37,7 @@ export async function verifyAdminCredentials(
     const supabase = createServiceRoleClient();
     
     // Buscar admin en la tabla admins
-    const { data: admin, error } = await supabase
-      .from('admins')
+    const { data: admin, error } = await (supabase.from('admins') as any)
       .select('*')
       .eq('email', email.toLowerCase().trim())
       .single();
@@ -49,16 +48,17 @@ export async function verifyAdminCredentials(
     }
 
     // Verificar contraseña
-    const isValid = await bcrypt.compare(password, admin.password_hash);
+    const adminData = admin as any;
+    const isValid = await bcrypt.compare(password, adminData.password_hash);
     
     if (!isValid) {
       return null;
     }
 
     return {
-      id: admin.id,
-      email: admin.email,
-      name: admin.name,
+      id: adminData.id,
+      email: adminData.email,
+      name: adminData.name,
     };
   } catch (error) {
     console.error('Error verifying admin credentials:', error);
@@ -77,22 +77,21 @@ export async function createOrUpdateAdmin(
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Buscar si ya existe
-    const { data: existingAdmin } = await supabase
-      .from('admins')
+    const { data: existingAdmin } = await (supabase.from('admins') as any)
       .select('*')
       .eq('email', email.toLowerCase().trim())
       .single();
 
     if (existingAdmin) {
+      const existingAdminData = existingAdmin as any;
       // Actualizar
-      const { data: admin, error } = await supabase
-        .from('admins')
+      const { data: admin, error } = await (supabase.from('admins') as any)
         .update({
           password_hash: hashedPassword,
-          name: name || existingAdmin.name,
+          name: name || existingAdminData.name,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', existingAdmin.id)
+        .eq('id', existingAdminData.id)
         .select()
         .single();
 
@@ -101,15 +100,15 @@ export async function createOrUpdateAdmin(
         return null;
       }
 
+      const adminData = admin as any;
       return {
-        id: admin.id,
-        email: admin.email,
-        name: admin.name,
+        id: adminData.id,
+        email: adminData.email,
+        name: adminData.name,
       };
     } else {
       // Crear nuevo
-      const { data: admin, error } = await supabase
-        .from('admins')
+      const { data: admin, error } = await (supabase.from('admins') as any)
         .insert({
           email: email.toLowerCase().trim(),
           password_hash: hashedPassword,
@@ -123,10 +122,11 @@ export async function createOrUpdateAdmin(
         return null;
       }
 
+      const adminData = admin as any;
       return {
-        id: admin.id,
-        email: admin.email,
-        name: admin.name,
+        id: adminData.id,
+        email: adminData.email,
+        name: adminData.name,
       };
     }
   } catch (error) {
