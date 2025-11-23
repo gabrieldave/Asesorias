@@ -46,39 +46,46 @@ export default function ServiceForm({
     setLoading(true);
 
     try {
-      const { supabase } = await import("@/lib/supabase/client");
       const featuresArray = formData.features
         .split("\n")
         .map((f) => f.trim())
         .filter((f) => f.length > 0);
 
-      if (service) {
-        // Actualizar
-        await (supabase.from("services") as any)
-          .update({
-            title: formData.title,
-            price: formData.price,
-            description: formData.description,
-            features: featuresArray,
-            active: formData.active,
-          })
-          .eq("id", service.id);
-      } else {
-        // Crear nuevo
-        await (supabase.from("services") as any).insert({
+      const response = await fetch("/api/admin/services/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          id: service?.id || null,
           title: formData.title,
           price: formData.price,
           description: formData.description,
           features: featuresArray,
           active: formData.active,
-        });
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Error response:", response.status, data);
+        alert(
+          `Error al guardar el servicio (${response.status}): ${data.error || data.details || "Error desconocido"}`
+        );
+        return;
       }
 
-      onSave();
-      onClose();
-    } catch (error) {
+      if (data.success) {
+        onSave();
+        onClose();
+      } else {
+        alert("Error al guardar el servicio: " + (data.error || "Error desconocido"));
+      }
+    } catch (error: any) {
       console.error("Error saving service:", error);
-      alert("Error al guardar el servicio");
+      alert(`Error al guardar el servicio: ${error.message || "Error de conexión"}`);
     } finally {
       setLoading(false);
     }
