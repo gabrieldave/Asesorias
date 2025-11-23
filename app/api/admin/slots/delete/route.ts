@@ -29,18 +29,53 @@ export async function DELETE(request: NextRequest) {
     }
 
     const supabase = createServiceRoleClient();
+    const slotId = parseInt(id);
+    console.log("🗑️ Intentando eliminar slot ID:", slotId);
 
     // Verificar que el slot no esté reservado
     const { data: slot, error: fetchError } = await (supabase.from("availability_slots") as any)
       .select("*")
-      .eq("id", parseInt(id))
+      .eq("id", slotId)
       .single();
 
     if (fetchError || !slot) {
+      console.error("❌ Error al buscar slot:", fetchError);
       return NextResponse.json(
         { error: "Slot no encontrado" },
         { status: 404 }
       );
+    }
+
+    console.log("📋 Slot encontrado:", { id: slot.id, is_booked: slot.is_booked });
+
+    // Verificar si hay bookings asociados a este slot
+    const { data: bookings, error: bookingsError } = await (supabase.from("bookings") as any)
+      .select("id, payment_status")
+      .eq("slot_id", slotId);
+
+    if (bookingsError) {
+      console.error("⚠️ Error al verificar bookings:", bookingsError);
+    } else if (bookings && bookings.length > 0) {
+      const activeBookings = bookings.filter((b: any) => 
+        b.payment_status === "pending" || b.payment_status === "paid"
+      );
+      
+      if (activeBookings.length > 0) {
+        console.error("❌ Slot tiene bookings activos:", activeBookings);
+        return NextResponse.json(
+          { error: `No se puede eliminar un slot con reservas activas (${activeBookings.length} reserva(s))` },
+          { status: 400 }
+        );
+      }
+      
+      // Si hay bookings pero están fallidos, los eliminamos primero
+      if (bookings.length > 0) {
+        console.log("🧹 Eliminando bookings fallidos asociados al slot...");
+        await (supabase.from("bookings") as any)
+          .delete()
+          .eq("slot_id", slotId)
+          .eq("payment_status", "failed");
+      }
     }
 
     if (slot.is_booked) {
@@ -50,17 +85,25 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const { error } = await (supabase.from("availability_slots") as any)
+    console.log("✅ Intentando eliminar slot de la base de datos...");
+    const { error, data } = await (supabase.from("availability_slots") as any)
       .delete()
-      .eq("id", parseInt(id));
+      .eq("id", slotId)
+      .select();
 
     if (error) {
-      console.error("Error deleting slot:", error);
+      console.error("❌ Error al eliminar slot de Supabase:", error);
+      console.error("❌ Detalles del error:", JSON.stringify(error, null, 2));
       return NextResponse.json(
-        { error: "Error al eliminar el slot" },
+        { 
+          error: "Error al eliminar el slot",
+          details: error.message || error.code || "Error desconocido"
+        },
         { status: 500 }
       );
     }
+
+    console.log("✅ Slot eliminado exitosamente");
 
     return NextResponse.json({
       success: true,
