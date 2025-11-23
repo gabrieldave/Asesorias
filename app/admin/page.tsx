@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
-import { LogOut, Calendar, DollarSign, Users, Plus, Trash2, Edit2 } from "lucide-react";
+import { LogOut, Calendar, DollarSign, Users, Plus, Trash2, Edit2, Settings } from "lucide-react";
 import type { Service, AvailabilitySlot, Booking } from "@/types/database.types";
 import { getActiveServices } from "@/lib/supabase/queries";
 import ServiceForm from "@/components/ServiceForm";
@@ -17,15 +17,33 @@ export default function AdminDashboard() {
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"services" | "slots" | "bookings">("services");
+  const [activeTab, setActiveTab] = useState<"services" | "slots" | "bookings" | "integrations">("services");
   const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
   const [isSlotFormOpen, setIsSlotFormOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [integrationsStatus, setIntegrationsStatus] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
     loadData();
-  }, []);
+    if (activeTab === "integrations") {
+      loadIntegrationsStatus();
+    }
+  }, [activeTab]);
+
+  const loadIntegrationsStatus = async () => {
+    try {
+      const response = await fetch("/api/admin/integrations/status", {
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setIntegrationsStatus(data);
+      }
+    } catch (error) {
+      console.error("Error loading integrations status:", error);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -244,6 +262,7 @@ export default function AdminDashboard() {
             { id: "services", label: "Servicios", icon: DollarSign },
             { id: "slots", label: "Slots", icon: Calendar },
             { id: "bookings", label: "Reservas", icon: Users },
+            { id: "integrations", label: "Integraciones", icon: Settings },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -385,6 +404,148 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {activeTab === "integrations" && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold uppercase">Estado de Integraciones</h2>
+                <button
+                  onClick={loadIntegrationsStatus}
+                  className="px-4 py-2 border-terminal hover-terminal text-sm font-semibold uppercase"
+                >
+                  Actualizar
+                </button>
+              </div>
+              {integrationsStatus ? (
+                <div className="space-y-4">
+                  {/* Google Calendar */}
+                  <div className="border-terminal p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-bold">Google Calendar</h3>
+                      <span
+                        className={`text-xs px-2 py-1 ${
+                          integrationsStatus.integrations.googleCalendar.configured
+                            ? "bg-profit/20 text-profit border border-profit"
+                            : "bg-loss/20 text-loss border border-loss"
+                        }`}
+                      >
+                        {integrationsStatus.integrations.googleCalendar.configured
+                          ? "Configurado"
+                          : "No Configurado"}
+                      </span>
+                    </div>
+                    {!integrationsStatus.integrations.googleCalendar.configured && (
+                      <div className="mt-2">
+                        <p className="text-sm text-foreground/70 mb-1">
+                          Variables de entorno faltantes:
+                        </p>
+                        <ul className="list-disc list-inside text-xs text-loss">
+                          {integrationsStatus.integrations.googleCalendar.missing.map(
+                            (varName: string) => (
+                              <li key={varName}>{varName}</li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Zoom */}
+                  <div className="border-terminal p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-bold">Zoom</h3>
+                      <span
+                        className={`text-xs px-2 py-1 ${
+                          integrationsStatus.integrations.zoom.configured
+                            ? "bg-profit/20 text-profit border border-profit"
+                            : "bg-loss/20 text-loss border border-loss"
+                        }`}
+                      >
+                        {integrationsStatus.integrations.zoom.configured
+                          ? "Configurado"
+                          : "No Configurado"}
+                      </span>
+                    </div>
+                    {!integrationsStatus.integrations.zoom.configured && (
+                      <div className="mt-2">
+                        <p className="text-sm text-foreground/70 mb-1">
+                          Variables de entorno faltantes:
+                        </p>
+                        <ul className="list-disc list-inside text-xs text-loss">
+                          {integrationsStatus.integrations.zoom.missing.map(
+                            (varName: string) => (
+                              <li key={varName}>{varName}</li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Resend (Emails) */}
+                  <div className="border-terminal p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-bold">Resend (Emails)</h3>
+                      <span
+                        className={`text-xs px-2 py-1 ${
+                          integrationsStatus.integrations.resend.configured
+                            ? "bg-profit/20 text-profit border border-profit"
+                            : "bg-loss/20 text-loss border border-loss"
+                        }`}
+                      >
+                        {integrationsStatus.integrations.resend.configured
+                          ? "Configurado"
+                          : "No Configurado"}
+                      </span>
+                    </div>
+                    {!integrationsStatus.integrations.resend.configured && (
+                      <div className="mt-2">
+                        <p className="text-sm text-foreground/70 mb-1">
+                          Variables de entorno faltantes:
+                        </p>
+                        <ul className="list-disc list-inside text-xs text-loss">
+                          {integrationsStatus.integrations.resend.missing.map(
+                            (varName: string) => (
+                              <li key={varName}>{varName}</li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Admin Email */}
+                  <div className="border-terminal p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-bold">Email del Admin</h3>
+                      <span
+                        className={`text-xs px-2 py-1 ${
+                          integrationsStatus.adminEmail
+                            ? "bg-profit/20 text-profit border border-profit"
+                            : "bg-loss/20 text-loss border border-loss"
+                        }`}
+                      >
+                        {integrationsStatus.adminEmail ? "Configurado" : "No Configurado"}
+                      </span>
+                    </div>
+                    {integrationsStatus.adminEmail ? (
+                      <p className="text-sm text-foreground/70 mt-2">
+                        {integrationsStatus.adminEmail}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-loss mt-2">
+                        Variable ADMIN_EMAIL no configurada
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-foreground/50">Cargando estado de integraciones...</p>
+                </div>
+              )}
             </div>
           )}
 

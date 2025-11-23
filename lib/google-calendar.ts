@@ -76,11 +76,11 @@ export async function createGoogleCalendarEvent(
           description: eventDescription,
           start: {
             dateTime: formatDate(startTime),
-            timeZone: "America/Santiago",
+            timeZone: "America/Mexico_City",
           },
           end: {
             dateTime: formatDate(endTime),
-            timeZone: "America/Santiago",
+            timeZone: "America/Mexico_City",
           },
           attendees: [
             {

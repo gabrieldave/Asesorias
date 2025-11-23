@@ -151,13 +151,14 @@ export async function POST(request: NextRequest) {
 
       // Crear Zoom meeting
       let zoomLink = null;
-      if (
+      const hasZoomConfig = 
         process.env.ZOOM_CLIENT_ID &&
         process.env.ZOOM_CLIENT_SECRET &&
-        process.env.ZOOM_ACCOUNT_ID &&
-        slot
-      ) {
+        process.env.ZOOM_ACCOUNT_ID;
+      
+      if (hasZoomConfig && slot) {
         try {
+          console.log("📹 Creando reunión de Zoom...");
           const startTime = new Date(slot.start_time);
           const endTime = new Date(slot.end_time);
           const duration = Math.round((endTime.getTime() - startTime.getTime()) / 60000); // minutos
@@ -170,25 +171,32 @@ export async function POST(request: NextRequest) {
           );
 
           if (zoomLink) {
-            console.log("Zoom meeting created:", zoomLink);
+            console.log("✅ Reunión de Zoom creada:", zoomLink);
+          } else {
+            console.log("⚠️ No se pudo crear la reunión de Zoom");
           }
         } catch (error) {
-          console.error("Error creating Zoom meeting:", error);
+          console.error("❌ Error creando reunión de Zoom:", error);
         }
       } else {
-        console.log("Zoom not configured or slot not found");
+        if (!hasZoomConfig) {
+          console.log("⚠️ Zoom no configurado: faltan variables de entorno (ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET, ZOOM_ACCOUNT_ID)");
+        }
+        if (!slot) {
+          console.log("⚠️ Slot no encontrado para crear reunión de Zoom");
+        }
       }
 
       // Crear evento en Google Calendar
       let gcalEventId = null;
-      if (
+      const hasGCalConfig = 
         process.env.GOOGLE_CALENDAR_CLIENT_ID &&
         process.env.GOOGLE_CALENDAR_CLIENT_SECRET &&
-        process.env.GOOGLE_CALENDAR_REFRESH_TOKEN &&
-        slot &&
-        service
-      ) {
+        process.env.GOOGLE_CALENDAR_REFRESH_TOKEN;
+      
+      if (hasGCalConfig && slot && service) {
         try {
+          console.log("📅 Creando evento en Google Calendar...");
           const startTime = new Date(slot.start_time);
           const endTime = new Date(slot.end_time);
 
@@ -203,13 +211,20 @@ export async function POST(request: NextRequest) {
           );
 
           if (gcalEventId) {
-            console.log("Google Calendar event created:", gcalEventId);
+            console.log("✅ Evento de Google Calendar creado:", gcalEventId);
+          } else {
+            console.log("⚠️ No se pudo crear el evento en Google Calendar");
           }
         } catch (error) {
-          console.error("Error creating Google Calendar event:", error);
+          console.error("❌ Error creando evento en Google Calendar:", error);
         }
       } else {
-        console.log("Google Calendar not configured or slot/service not found");
+        if (!hasGCalConfig) {
+          console.log("⚠️ Google Calendar no configurado: faltan variables de entorno (GOOGLE_CALENDAR_CLIENT_ID, GOOGLE_CALENDAR_CLIENT_SECRET, GOOGLE_CALENDAR_REFRESH_TOKEN)");
+        }
+        if (!slot || !service) {
+          console.log("⚠️ Slot o servicio no encontrado para crear evento en Google Calendar");
+        }
       }
 
       // Actualizar booking con links
@@ -229,43 +244,102 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Enviar emails (placeholder - requiere configuración)
+      // Enviar emails
       const resend = getResend();
       if (resend) {
         try {
+          console.log("📧 Enviando emails de confirmación...");
+          
+          // Formatear fecha del slot en hora de México
+          const slotStart = new Date(slot?.start_time || new Date());
+          const slotEnd = new Date(slot?.end_time || new Date());
+          const slotDateStr = slotStart.toLocaleString("es-MX", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "America/Mexico_City",
+          });
+          const slotEndStr = slotEnd.toLocaleString("es-MX", {
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "America/Mexico_City",
+          });
+
           // Email al cliente
-          await resend.emails.send({
-            from: "Asesorías TST <noreply@tus-dominio.com>",
+          const customerEmailResult = await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL || "Asesorías TST <noreply@todossomostraders.com>",
             to: bookingData.customer_email,
-            subject: `Confirmación de Reserva - ${service?.title || "Mentoría"}`,
+            subject: `✅ Reserva Confirmada - ${service?.title || "Mentoría"}`,
             html: `
-              <h2>¡Reserva Confirmada!</h2>
-              <p>Hola ${bookingData.customer_name},</p>
-              <p>Tu reserva para <strong>${service?.title || "Mentoría"}</strong> ha sido confirmada.</p>
-              ${zoomLink ? `<p>Link de Zoom: <a href="${zoomLink}">${zoomLink}</a></p>` : ""}
-              <p>Gracias por confiar en nosotros.</p>
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #00ff00;">¡Reserva Confirmada!</h2>
+                <p>Hola <strong>${bookingData.customer_name}</strong>,</p>
+                <p>Tu reserva para <strong>${service?.title || "Mentoría"}</strong> ha sido confirmada exitosamente.</p>
+                
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                  <h3>Detalles de tu reserva:</h3>
+                  <p><strong>Servicio:</strong> ${service?.title || "N/A"}</p>
+                  <p><strong>Fecha y Hora:</strong> ${slotDateStr} - ${slotEndStr} (Hora de México)</p>
+                  <p><strong>Precio:</strong> $${service?.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "N/A"} USD</p>
+                  ${zoomLink ? `<p><strong>Link de Zoom:</strong> <a href="${zoomLink}">${zoomLink}</a></p>` : ""}
+                </div>
+                
+                ${zoomLink ? `<p style="background: #e8f5e9; padding: 10px; border-radius: 5px; border-left: 4px solid #00ff00;">
+                  <strong>🔗 Link de Zoom:</strong><br>
+                  <a href="${zoomLink}" style="color: #0066cc;">${zoomLink}</a><br>
+                  <small>Guarda este link para acceder a tu sesión</small>
+                </p>` : ""}
+                
+                <p>Gracias por confiar en nosotros. ¡Te esperamos!</p>
+              </div>
             `,
           });
+
+          if (customerEmailResult.data) {
+            console.log("✅ Email enviado al cliente:", bookingData.customer_email);
+          } else {
+            console.error("❌ Error enviando email al cliente:", customerEmailResult.error);
+          }
 
           // Email al admin
           const adminEmail = process.env.ADMIN_EMAIL;
           if (adminEmail) {
-            await resend.emails.send({
-              from: "Asesorías TST <noreply@tus-dominio.com>",
+            const adminEmailResult = await resend.emails.send({
+              from: process.env.RESEND_FROM_EMAIL || "Asesorías TST <noreply@todossomostraders.com>",
               to: adminEmail,
-              subject: `Nueva Reserva - ${bookingData.customer_name}`,
+              subject: `📅 Nueva Reserva - ${bookingData.customer_name}`,
               html: `
-                <h2>Nueva Reserva</h2>
-                <p><strong>Cliente:</strong> ${bookingData.customer_name}</p>
-                <p><strong>Email:</strong> ${bookingData.customer_email}</p>
-                <p><strong>Servicio:</strong> ${service?.title || "N/A"}</p>
-                <p><strong>Precio:</strong> $${service?.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "N/A"} USD</p>
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2>Nueva Reserva Recibida</h2>
+                  <div style="background: #f5f5f5; padding: 15px; border-radius: 5px;">
+                    <p><strong>Cliente:</strong> ${bookingData.customer_name}</p>
+                    <p><strong>Email:</strong> ${bookingData.customer_email}</p>
+                    <p><strong>Servicio:</strong> ${service?.title || "N/A"}</p>
+                    <p><strong>Fecha y Hora:</strong> ${slotDateStr} - ${slotEndStr} (Hora de México)</p>
+                    <p><strong>Precio:</strong> $${service?.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "N/A"} USD</p>
+                    ${zoomLink ? `<p><strong>Link de Zoom:</strong> <a href="${zoomLink}">${zoomLink}</a></p>` : ""}
+                    ${gcalEventId ? `<p><strong>Google Calendar Event ID:</strong> ${gcalEventId}</p>` : ""}
+                  </div>
+                </div>
               `,
             });
+
+            if (adminEmailResult.data) {
+              console.log("✅ Email enviado al admin:", adminEmail);
+            } else {
+              console.error("❌ Error enviando email al admin:", adminEmailResult.error);
+            }
+          } else {
+            console.log("⚠️ ADMIN_EMAIL no configurado, no se enviará email al admin");
           }
         } catch (error) {
-          console.error("Error sending emails:", error);
+          console.error("❌ Error enviando emails:", error);
         }
+      } else {
+        console.log("⚠️ Resend no configurado: falta variable de entorno RESEND_API_KEY");
       }
 
       return NextResponse.json({ received: true });
