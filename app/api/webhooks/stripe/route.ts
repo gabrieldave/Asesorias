@@ -54,8 +54,7 @@ export async function POST(request: NextRequest) {
       let booking = null;
 
       if (bookingId) {
-        const { data, error } = await supabase
-          .from("bookings")
+        const { data, error } = await (supabase.from("bookings") as any)
           .select("*")
           .eq("id", parseInt(bookingId))
           .single();
@@ -64,8 +63,7 @@ export async function POST(request: NextRequest) {
 
       // Si no se encuentra por metadata, buscar por session_id
       if (!booking) {
-        const { data, error } = await supabase
-          .from("bookings")
+        const { data, error } = await (supabase.from("bookings") as any)
           .select("*")
           .eq("stripe_session_id", session.id)
           .single();
@@ -90,13 +88,11 @@ export async function POST(request: NextRequest) {
 
       // Obtener servicio y slot
       const [serviceResult, slotResult] = await Promise.all([
-        supabase
-          .from("services")
+        (supabase.from("services") as any)
           .select("*")
           .eq("id", bookingData.service_id)
           .single(),
-        supabase
-          .from("availability_slots")
+        (supabase.from("availability_slots") as any)
           .select("*")
           .eq("id", bookingData.slot_id)
           .single(),

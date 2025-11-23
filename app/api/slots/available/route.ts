@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import type { Database, AvailabilitySlot } from "@/types/database.types";
+import type { Database, AvailabilitySlot, Booking } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
 
@@ -29,15 +29,13 @@ export async function GET() {
     const oneHourAgo = new Date();
     oneHourAgo.setHours(oneHourAgo.getHours() - 1);
     
-    await supabase
-      .from("bookings")
+    await (supabase.from("bookings") as any)
       .delete()
       .eq("payment_status", "pending")
       .lt("created_at", oneHourAgo.toISOString());
 
     // Obtener todos los slots que no están marcados como booked
-    const { data: slots, error: slotsError } = await supabase
-      .from("availability_slots")
+    const { data: slots, error: slotsError } = await (supabase.from("availability_slots") as any)
       .select("*")
       .eq("is_booked", false)
       .gt("start_time", new Date().toISOString())
@@ -56,8 +54,7 @@ export async function GET() {
     }
 
     // Obtener todos los bookings activos (pending o paid)
-    const { data: activeBookings, error: bookingsError } = await supabase
-      .from("bookings")
+    const { data: activeBookings, error: bookingsError } = await (supabase.from("bookings") as any)
       .select("slot_id")
       .in("payment_status", ["pending", "paid"]);
 
@@ -69,7 +66,7 @@ export async function GET() {
 
     // Crear un Set con los slot_ids que tienen bookings activos
     const bookedSlotIds = new Set(
-      (activeBookings || []).map((b) => b.slot_id)
+      ((activeBookings || []) as Booking[]).map((b) => b.slot_id)
     );
 
     // Filtrar slots que no tienen bookings activos
