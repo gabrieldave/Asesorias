@@ -332,30 +332,58 @@ export default function SlotForm({ isOpen, onClose, onSave }: SlotFormProps) {
               </div>
 
               {/* Horario */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold uppercase mb-3">
-                    Hora de Inicio
-                  </label>
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full px-4 py-3 bg-background border-terminal text-foreground font-mono focus:outline-none focus:border-profit"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold uppercase mb-3">
-                    Hora de Fin
-                  </label>
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full px-4 py-3 bg-background border-terminal text-foreground font-mono focus:outline-none focus:border-profit"
-                    required
-                  />
+              <div>
+                <label className="block text-sm font-semibold uppercase mb-3">
+                  Horario (Formato 24 horas)
+                </label>
+                <p className="text-xs text-foreground/50 mb-3">
+                  Usa formato 24 horas: 09:00 = 9 AM, 14:00 = 2 PM, 20:00 = 8 PM
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-2 text-foreground/70">
+                      Hora de Inicio
+                    </label>
+                    <input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="w-full px-4 py-3 bg-background border-terminal text-foreground font-mono focus:outline-none focus:border-profit"
+                      required
+                    />
+                    {startTime && (
+                      <p className="text-xs text-foreground/50 mt-1 font-mono">
+                        {(() => {
+                          const [h, m] = startTime.split(":").map(Number);
+                          const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+                          const ampm = h < 12 ? "AM" : "PM";
+                          return `${hour12}:${m.toString().padStart(2, "0")} ${ampm}`;
+                        })()}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-2 text-foreground/70">
+                      Hora de Fin
+                    </label>
+                    <input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="w-full px-4 py-3 bg-background border-terminal text-foreground font-mono focus:outline-none focus:border-profit"
+                      required
+                    />
+                    {endTime && (
+                      <p className="text-xs text-foreground/50 mt-1 font-mono">
+                        {(() => {
+                          const [h, m] = endTime.split(":").map(Number);
+                          const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+                          const ampm = h < 12 ? "AM" : "PM";
+                          return `${hour12}:${m.toString().padStart(2, "0")} ${ampm}`;
+                        })()}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 

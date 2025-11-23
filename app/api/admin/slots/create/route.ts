@@ -14,14 +14,25 @@ function generateRecurringSlots(
   duration: number
 ): Array<{ start_time: string; end_time: string }> {
   const slots: Array<{ start_time: string; end_time: string }> = [];
+  
+  // Parsear horas en formato HH:mm (24 horas)
   const [startHour, startMin] = startTime.split(":").map(Number);
   const [endHour, endMin] = endTime.split(":").map(Number);
   
+  // Validar que las horas estén en rango válido (0-23)
+  if (startHour < 0 || startHour > 23 || endHour < 0 || endHour > 23) {
+    throw new Error("Las horas deben estar entre 00:00 y 23:59");
+  }
+  
+  // Si endHour < startHour, asumimos que el horario de fin es del mismo día
+  // (no cruzamos medianoche)
+  const endHourAdjusted = endHour < startHour ? endHour + 24 : endHour;
+  
   const startDate = new Date(startRange);
-  startDate.setHours(0, 0, 0, 0);
+  startDate.setUTCHours(0, 0, 0, 0);
   
   const endDate = new Date(endRange);
-  endDate.setHours(23, 59, 59, 999);
+  endDate.setUTCHours(23, 59, 59, 999);
   
   const currentDate = new Date(startDate);
   
@@ -30,11 +41,18 @@ function generateRecurringSlots(
     
     if (selectedDays.includes(dayOfWeek)) {
       // Crear slots desde startTime hasta endTime con la duración especificada
+      // Usar UTC para evitar problemas de zona horaria
       let slotStart = new Date(currentDate);
-      slotStart.setHours(startHour, startMin, 0, 0);
+      slotStart.setUTCHours(startHour, startMin, 0, 0);
       
       const slotEndTime = new Date(currentDate);
-      slotEndTime.setHours(endHour, endMin, 0, 0);
+      // Si el horario de fin es menor que el de inicio, asumimos que es del mismo día
+      if (endHour < startHour) {
+        // Esto no debería pasar normalmente, pero lo manejamos
+        slotEndTime.setUTCHours(endHour + 24, endMin, 0, 0);
+      } else {
+        slotEndTime.setUTCHours(endHour, endMin, 0, 0);
+      }
       
       while (slotStart < slotEndTime) {
         const slotEnd = new Date(slotStart.getTime() + duration * 60000);
@@ -53,7 +71,7 @@ function generateRecurringSlots(
     }
     
     // Avanzar al siguiente día
-    currentDate.setDate(currentDate.getDate() + 1);
+    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
   }
   
   return slots;
@@ -100,15 +118,32 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Validar que startTime < endTime
+      // Validar formato de hora (HH:mm en formato 24 horas)
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+        return NextResponse.json(
+          { error: "El formato de hora debe ser HH:mm (24 horas). Ejemplo: 09:00 para 9 AM, 14:00 para 2 PM" },
+          { status: 400 }
+        );
+      }
+
       const [startHour, startMin] = startTime.split(":").map(Number);
       const [endHour, endMin] = endTime.split(":").map(Number);
+      
+      // Validar que las horas estén en rango válido
+      if (startHour < 0 || startHour > 23 || endHour < 0 || endHour > 23) {
+        return NextResponse.json(
+          { error: "Las horas deben estar entre 00:00 y 23:59" },
+          { status: 400 }
+        );
+      }
+      
       const startTimeMinutes = startHour * 60 + startMin;
       const endTimeMinutes = endHour * 60 + endMin;
 
       if (startTimeMinutes >= endTimeMinutes) {
         return NextResponse.json(
-          { error: "La hora de inicio debe ser anterior a la hora de fin" },
+          { error: `La hora de inicio (${startTime}) debe ser anterior a la hora de fin (${endTime}). Recuerda usar formato 24 horas: 14:00 para 2 PM, no 02:00` },
           { status: 400 }
         );
       }
