@@ -22,8 +22,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        {/* Iconos opcionales - se pueden agregar después */}
       </head>
       <body className="min-h-screen bg-background text-foreground">
         {children}

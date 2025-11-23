@@ -2,22 +2,41 @@
 
 ## Credenciales de Acceso
 
-**Email:** `david.del.rio.colin@gmail.com`  
-**Contraseña:** (La que configuraste cuando creaste el usuario en Supabase)
+**Email:** Configura tu email de administrador en `.env.local`  
+**Contraseña:** La que configuraste cuando creaste el usuario en Supabase
 
 ## Pasos para Acceder
 
-### 1. Ir a la página de Login
+### 1. Configurar Variables de Entorno
+
+Primero, asegúrate de tener configurado tu email en `.env.local`:
+
+```env
+NEXT_PUBLIC_ADMIN_EMAIL=tu_email@example.com
+ADMIN_EMAIL=tu_email@example.com
+```
+
+### 2. Crear Usuario en Supabase
+
+1. Ve a tu Supabase Dashboard
+2. Authentication → Users
+3. Crea un nuevo usuario con tu email de administrador
+4. Guarda la contraseña de forma segura
+
+### 3. Ir a la página de Login
+
 Abre en tu navegador:
 ```
 http://localhost:3000/login
 ```
 
-### 2. Ingresar Credenciales
-- **Email:** `david.del.rio.colin@gmail.com`
-- **Contraseña:** Tu contraseña de Supabase
+### 4. Ingresar Credenciales
 
-### 3. Acceder al Dashboard
+- **Email:** El email que configuraste en `.env.local`
+- **Contraseña:** La contraseña que creaste en Supabase
+
+### 5. Acceder al Dashboard
+
 Una vez autenticado, serás redirigido automáticamente a:
 ```
 http://localhost:3000/admin
@@ -45,25 +64,20 @@ http://localhost:3000/admin
 
 ## Si Olvidaste tu Contraseña
 
-1. Ve a Supabase Dashboard: https://supabase.com/dashboard/project/vdgbqkokslhmzdvedimv
+1. Ve a tu Supabase Dashboard
 2. Authentication → Users
-3. Busca `david.del.rio.colin@gmail.com`
+3. Busca tu email de administrador
 4. Puedes resetear la contraseña desde ahí
 
-## Configuración de Variables de Entorno
+## Seguridad
 
-Asegúrate de tener en tu `.env.local`:
-
-```env
-NEXT_PUBLIC_ADMIN_EMAIL=david.del.rio.colin@gmail.com
-```
-
-Esto asegura que solo tu email tenga acceso al dashboard.
+- Solo los emails configurados en `NEXT_PUBLIC_ADMIN_EMAIL` pueden acceder al dashboard
+- El dashboard está protegido y solo permite acceso a usuarios autenticados
+- Todos los cambios se guardan directamente en Supabase
+- **NUNCA** subas tu archivo `.env.local` al repositorio (está en `.gitignore`)
 
 ## Notas Importantes
 
-- El usuario ya existe en Supabase Auth
+- El usuario debe existir en Supabase Auth antes de poder hacer login
 - Si no recuerdas la contraseña, puedes resetearla desde Supabase Dashboard
-- El dashboard está protegido y solo permite acceso a usuarios autenticados
-- Todos los cambios se guardan directamente en Supabase
-
+- Puedes configurar múltiples emails de administrador separándolos por comas en el código (requiere modificación)

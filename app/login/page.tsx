@@ -27,11 +27,12 @@ export default function LoginPage() {
       if (authError) throw authError;
 
       if (data.user) {
-        // Lista de emails permitidos para acceso admin (solo david.del.rio.colin@gmail.com)
-        const allowedAdminEmails = [
-          "david.del.rio.colin@gmail.com",
-          process.env.NEXT_PUBLIC_ADMIN_EMAIL || "",
-        ].filter((email) => email !== "");
+        // Lista de emails permitidos para acceso admin (desde variable de entorno)
+        const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "";
+        const allowedAdminEmails = adminEmail
+          .split(",")
+          .map((email) => email.trim())
+          .filter((email) => email !== "");
 
         // Verificar que el email esté en la lista de permitidos
         if (allowedAdminEmails.includes(data.user.email || "")) {

@@ -24,7 +24,7 @@ npm install
 cp env.example .env.local
 ```
 
-2. Las credenciales de Supabase ya están configuradas en `env.example` para el proyecto "calculadora".
+2. Completa las variables de entorno en `.env.local` con tus credenciales reales (ver `env.example` como referencia).
 
 ## Desarrollo
 
@@ -36,7 +36,7 @@ Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
 ## Base de Datos (Supabase)
 
-Las tablas han sido creadas en el proyecto Supabase "calculadora":
+Las tablas han sido creadas en tu proyecto Supabase:
 
 ### Tablas Creadas
 
