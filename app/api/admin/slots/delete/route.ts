@@ -20,6 +20,7 @@ export async function DELETE(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get("id");
+    const force = searchParams.get("force") === "true"; // Permitir eliminación forzada
 
     if (!id) {
       return NextResponse.json(
@@ -60,7 +61,7 @@ export async function DELETE(request: NextRequest) {
         b.payment_status === "pending" || b.payment_status === "paid"
       );
       
-      if (activeBookings.length > 0) {
+      if (activeBookings.length > 0 && !force) {
         console.error("❌ Slot tiene bookings activos:", activeBookings);
         return NextResponse.json(
           { error: `No se puede eliminar un slot con reservas activas (${activeBookings.length} reserva(s))` },
@@ -68,8 +69,23 @@ export async function DELETE(request: NextRequest) {
         );
       }
       
-      // Si hay bookings pero están fallidos, los eliminamos primero
-      if (bookings.length > 0) {
+      // Si force=true, eliminar todos los bookings primero
+      if (force && bookings.length > 0) {
+        console.log("🧹 Eliminando todos los bookings asociados al slot (forzado)...");
+        const { error: deleteBookingsError } = await (supabase.from("bookings") as any)
+          .delete()
+          .eq("slot_id", slotId);
+        
+        if (deleteBookingsError) {
+          console.error("❌ Error al eliminar bookings:", deleteBookingsError);
+          return NextResponse.json(
+            { error: "Error al eliminar las reservas asociadas" },
+            { status: 500 }
+          );
+        }
+        console.log("✅ Bookings eliminados, procediendo a eliminar slot...");
+      } else if (bookings.length > 0) {
+        // Si hay bookings pero están fallidos, los eliminamos primero
         console.log("🧹 Eliminando bookings fallidos asociados al slot...");
         await (supabase.from("bookings") as any)
           .delete()

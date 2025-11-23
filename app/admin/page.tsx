@@ -39,7 +39,24 @@ export default function AdminDashboard() {
 
       if (servicesData.data) setServices(servicesData.data);
       if (slotsData.data) setSlots(slotsData.data);
-      if (bookingsData.data) setBookings(bookingsData.data);
+      if (bookingsData.data) {
+        setBookings(bookingsData.data);
+        
+        // Actualizar is_booked en slots basado en bookings activos
+        if (slotsData.data) {
+          const activeBookings = bookingsData.data.filter((b: Booking) => 
+            b.payment_status === "pending" || b.payment_status === "paid"
+          );
+          const bookedSlotIds = new Set(activeBookings.map((b: Booking) => b.slot_id));
+          
+          const updatedSlots = slotsData.data.map((slot: AvailabilitySlot) => ({
+            ...slot,
+            is_booked: bookedSlotIds.has(slot.id)
+          }));
+          
+          setSlots(updatedSlots);
+        }
+      }
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -58,11 +75,19 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDeleteSlot = async (id: number) => {
-    if (!confirm("¿Estás seguro de eliminar este slot?")) return;
+  const handleDeleteSlot = async (id: number, force: boolean = false) => {
+    const message = force 
+      ? "¿Estás seguro de eliminar este slot? Esto eliminará TODAS las reservas asociadas (incluyendo pendientes y pagadas)."
+      : "¿Estás seguro de eliminar este slot?";
+    
+    if (!confirm(message)) return;
 
     try {
-      const response = await fetch(`/api/admin/slots/delete?id=${id}`, {
+      const url = force 
+        ? `/api/admin/slots/delete?id=${id}&force=true`
+        : `/api/admin/slots/delete?id=${id}`;
+      
+      const response = await fetch(url, {
         method: "DELETE",
         credentials: "include", // Asegurar que se envíen las cookies
       });
@@ -83,6 +108,34 @@ export default function AdminDashboard() {
     } catch (error: any) {
       console.error("Error deleting slot:", error);
       alert("Error al eliminar el slot: " + (error.message || "Error de conexión"));
+    }
+  };
+
+  const handleDeleteBooking = async (id: number) => {
+    if (!confirm("¿Estás seguro de eliminar esta reserva?")) return;
+
+    try {
+      const response = await fetch(`/api/admin/bookings/delete?id=${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Error response:", response.status, data);
+        alert(`Error al eliminar la reserva (${response.status}): ${data.error || "Error desconocido"}`);
+        return;
+      }
+
+      if (data.success) {
+        loadData();
+      } else {
+        alert("Error al eliminar la reserva: " + (data.error || "Error desconocido"));
+      }
+    } catch (error: any) {
+      console.error("Error deleting booking:", error);
+      alert("Error al eliminar la reserva: " + (error.message || "Error de conexión"));
     }
   };
 
@@ -237,15 +290,26 @@ export default function AdminDashboard() {
                         {slot.is_booked ? "Reservado" : "Disponible"}
                       </span>
                     </div>
-                    {!slot.is_booked && (
-                      <button
-                        onClick={() => handleDeleteSlot(slot.id)}
-                        className="mt-2 px-3 py-1 border-terminal hover-terminal text-loss text-xs"
-                      >
-                        <Trash2 className="w-3 h-3 inline mr-1" />
-                        Eliminar
-                      </button>
-                    )}
+                    <div className="mt-2 flex gap-2">
+                      {!slot.is_booked ? (
+                        <button
+                          onClick={() => handleDeleteSlot(slot.id)}
+                          className="px-3 py-1 border-terminal hover-terminal text-loss text-xs"
+                        >
+                          <Trash2 className="w-3 h-3 inline mr-1" />
+                          Eliminar
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleDeleteSlot(slot.id, true)}
+                          className="px-3 py-1 border-terminal hover-terminal text-loss text-xs bg-loss/10"
+                          title="Eliminar slot y todas sus reservas"
+                        >
+                          <Trash2 className="w-3 h-3 inline mr-1" />
+                          Eliminar Forzado
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -294,6 +358,13 @@ export default function AdminDashboard() {
                             Link Zoom
                           </a>
                         )}
+                        <button
+                          onClick={() => handleDeleteBooking(booking.id)}
+                          className="mt-2 px-3 py-1 border-terminal hover-terminal text-loss text-xs"
+                        >
+                          <Trash2 className="w-3 h-3 inline mr-1" />
+                          Eliminar
+                        </button>
                       </div>
                     </div>
                   </div>
