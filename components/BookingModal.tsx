@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Calendar, Clock } from "lucide-react";
+import { X, Calendar, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { getAvailableSlots } from "@/lib/supabase/queries";
 import type { AvailabilitySlot, Service } from "@/types/database.types";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, getDay } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
 interface BookingModalProps {
@@ -23,6 +23,8 @@ export default function BookingModal({
 }: BookingModalProps) {
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,6 +36,8 @@ export default function BookingModal({
       loadSlots();
       setError(null);
       setSelectedSlot(null);
+      setSelectedDate(null);
+      setCurrentMonth(new Date());
       setCustomerName("");
       setCustomerEmail("");
     }
@@ -125,6 +129,99 @@ export default function BookingModal({
     }
   };
 
+  const formatTimeOnly = (slot: AvailabilitySlot) => {
+    try {
+      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const start = formatInTimeZone(parseISO(slot.start_time), userTimeZone, "HH:mm");
+      const end = formatInTimeZone(parseISO(slot.end_time), userTimeZone, "HH:mm");
+      return `${start} - ${end}`;
+    } catch {
+      const start = format(parseISO(slot.start_time), "HH:mm");
+      const end = format(parseISO(slot.end_time), "HH:mm");
+      return `${start} - ${end}`;
+    }
+  };
+
+  // Agrupar slots por día
+  const slotsByDate = useMemo(() => {
+    const grouped: Record<string, AvailabilitySlot[]> = {};
+    slots.forEach((slot) => {
+      try {
+        const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const slotDate = formatInTimeZone(parseISO(slot.start_time), userTimeZone, "yyyy-MM-dd");
+        if (!grouped[slotDate]) {
+          grouped[slotDate] = [];
+        }
+        grouped[slotDate].push(slot);
+      } catch {
+        const slotDate = format(parseISO(slot.start_time), "yyyy-MM-dd");
+        if (!grouped[slotDate]) {
+          grouped[slotDate] = [];
+        }
+        grouped[slotDate].push(slot);
+      }
+    });
+    return grouped;
+  }, [slots]);
+
+  // Obtener slots del día seleccionado
+  const slotsForSelectedDate = useMemo(() => {
+    if (!selectedDate) return [];
+    try {
+      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const dateKey = formatInTimeZone(selectedDate, userTimeZone, "yyyy-MM-dd");
+      return slotsByDate[dateKey] || [];
+    } catch {
+      const dateKey = format(selectedDate, "yyyy-MM-dd");
+      return slotsByDate[dateKey] || [];
+    }
+  }, [selectedDate, slotsByDate]);
+
+  // Generar días del calendario
+  const calendarDays = useMemo(() => {
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Lunes
+    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    
+    return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  }, [currentMonth]);
+
+  // Obtener clave de fecha para un objeto Date
+  const getDateKey = (date: Date): string => {
+    try {
+      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      return formatInTimeZone(date, userTimeZone, "yyyy-MM-dd");
+    } catch {
+      return format(date, "yyyy-MM-dd");
+    }
+  };
+
+  // Verificar si un día tiene slots disponibles
+  const hasSlotsForDate = (date: Date): boolean => {
+    const dateKey = getDateKey(date);
+    return !!slotsByDate[dateKey] && slotsByDate[dateKey].length > 0;
+  };
+
+  const handleDateClick = (date: Date) => {
+    if (hasSlotsForDate(date)) {
+      setSelectedDate(date);
+      setSelectedSlot(null);
+    }
+  };
+
+  const handlePrevMonth = () => {
+    setCurrentMonth(subMonths(currentMonth, 1));
+    setSelectedDate(null);
+    setSelectedSlot(null);
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth(addMonths(currentMonth, 1));
+    setSelectedDate(null);
+    setSelectedSlot(null);
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -163,7 +260,7 @@ export default function BookingModal({
                 <p className="text-foreground/70 text-sm">{service.description}</p>
               </div>
 
-              {/* Selección de slot */}
+              {/* Selección de slot con calendario */}
               <div>
                 <label className="block text-sm font-semibold uppercase tracking-wider mb-3">
                   <Calendar className="w-4 h-4 inline mr-2" />
@@ -178,25 +275,137 @@ export default function BookingModal({
                     No hay horarios disponibles en este momento
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
-                    {slots.map((slot) => (
-                      <button
-                        key={slot.id}
-                        onClick={() => setSelectedSlot(slot.id)}
-                        className={`p-3 border-terminal text-left transition-all ${
-                          selectedSlot === slot.id
-                            ? "bg-profit text-background border-profit"
-                            : "hover-terminal"
-                        }`}
+                  <div className="space-y-4">
+                    {/* Calendario */}
+                    <div className="border-terminal p-4">
+                      {/* Header del calendario */}
+                      <div className="flex items-center justify-between mb-4">
+                        <button
+                          onClick={handlePrevMonth}
+                          className="p-2 border-terminal hover-terminal"
+                          type="button"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <h3 className="text-lg font-bold uppercase tracking-wider">
+                          {format(currentMonth, "MMMM yyyy")}
+                        </h3>
+                        <button
+                          onClick={handleNextMonth}
+                          className="p-2 border-terminal hover-terminal"
+                          type="button"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Días de la semana */}
+                      <div className="grid grid-cols-7 gap-1 mb-2">
+                        {["L", "M", "X", "J", "V", "S", "D"].map((day, idx) => (
+                          <div
+                            key={idx}
+                            className="text-center text-xs font-semibold text-foreground/60 py-2"
+                          >
+                            {day}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Días del mes */}
+                      <div className="grid grid-cols-7 gap-1">
+                        {calendarDays.map((day, idx) => {
+                          const isCurrentMonth = isSameMonth(day, currentMonth);
+                          const hasSlots = hasSlotsForDate(day);
+                          const isSelected = selectedDate && isSameDay(day, selectedDate);
+                          const isToday = isSameDay(day, new Date());
+
+                          return (
+                            <button
+                              key={idx}
+                              onClick={() => handleDateClick(day)}
+                              disabled={!hasSlots || !isCurrentMonth}
+                              className={`
+                                aspect-square p-2 text-xs font-mono border transition-all
+                                ${!isCurrentMonth ? "text-foreground/20 border-border/20" : ""}
+                                ${hasSlots && isCurrentMonth
+                                  ? "border-terminal hover-terminal cursor-pointer"
+                                  : "border-border/30 cursor-not-allowed opacity-50"
+                                }
+                                ${isSelected
+                                  ? "bg-profit text-background border-profit"
+                                  : ""
+                                }
+                                ${isToday && !isSelected && isCurrentMonth
+                                  ? "border-profit/50 bg-profit/10"
+                                  : ""
+                                }
+                                ${hasSlots && isCurrentMonth && !isSelected
+                                  ? "relative"
+                                  : ""
+                                }
+                              `}
+                              type="button"
+                            >
+                              <div className="flex flex-col items-center justify-center h-full">
+                                <span>{format(day, "d")}</span>
+                                {hasSlots && isCurrentMonth && (
+                                  <span className="text-[8px] mt-0.5 text-profit">
+                                    {slotsByDate[getDateKey(day)]?.length || 0}
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Horarios del día seleccionado */}
+                    {selectedDate && slotsForSelectedDate.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-2"
                       >
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4" />
-                          <span className="text-sm font-mono">
-                            {formatSlotTime(slot)}
-                          </span>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-foreground/70">
+                          Horarios disponibles para {format(selectedDate, "EEEE, d 'de' MMMM")}
+                        </label>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                          {slotsForSelectedDate.map((slot) => (
+                            <button
+                              key={slot.id}
+                              onClick={() => setSelectedSlot(slot.id)}
+                              className={`p-3 border-terminal text-left transition-all text-xs ${
+                                selectedSlot === slot.id
+                                  ? "bg-profit text-background border-profit"
+                                  : "hover-terminal"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-3 h-3 flex-shrink-0" />
+                                <span className="font-mono">
+                                  {formatTimeOnly(slot)}
+                                </span>
+                              </div>
+                            </button>
+                          ))}
                         </div>
-                      </button>
-                    ))}
+                      </motion.div>
+                    )}
+
+                    {/* Mensaje si no hay horarios para el día seleccionado */}
+                    {selectedDate && slotsForSelectedDate.length === 0 && (
+                      <div className="text-center py-4 text-foreground/50 text-sm border border-terminal">
+                        No hay horarios disponibles para este día
+                      </div>
+                    )}
+
+                    {/* Mensaje si no se ha seleccionado un día */}
+                    {!selectedDate && (
+                      <div className="text-center py-4 text-foreground/50 text-sm border border-terminal">
+                        Selecciona un día del calendario para ver los horarios disponibles
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

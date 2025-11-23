@@ -1,0 +1,36 @@
+{
+  "name": "Asesorías - Todos Somos Traders",
+  "short_name": "Asesorías TST",
+  "description": "Sistema de gestión de asesorías y reservas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#00FF41",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Ver Servicios",
+      "short_name": "Servicios",
+      "description": "Ver servicios disponibles",
+      "url": "/#services-section",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
+

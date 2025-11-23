@@ -64,3 +64,4 @@ Si el webhook no funciona:
 3. Revisa los logs en Vercel para ver errores
 4. Revisa los logs en Stripe Dashboard → Webhooks → Tu endpoint → "Recent deliveries"
 
+

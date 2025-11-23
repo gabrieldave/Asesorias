@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="192" fill="#000000"/>
+  <rect x="19.200000000000003" y="19.200000000000003" width="153.60000000000002" height="153.60000000000002" fill="none" stroke="#00FF41" stroke-width="9.600000000000001"/>
+  <text x="50%" y="50%" font-family="monospace" font-size="57.599999999999994" fill="#00FF41" text-anchor="middle" dominant-baseline="middle" font-weight="bold">TST</text>
+</svg>
