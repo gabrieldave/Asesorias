@@ -29,8 +29,15 @@ export default function LoginPage() {
       if (data.user) {
         // Verificar que sea el admin
         const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "";
-        if (data.user.email === adminEmail || adminEmail === "") {
+        // Permitir acceso si el email coincide con ADMIN_EMAIL o si ADMIN_EMAIL no está configurado
+        // También permitir acceso si el email es david.del.rio.colin@gmail.com
+        if (
+          data.user.email === adminEmail ||
+          adminEmail === "" ||
+          data.user.email === "david.del.rio.colin@gmail.com"
+        ) {
           router.push("/admin");
+          router.refresh();
         } else {
           await supabase.auth.signOut();
           setError("No tienes permisos de administrador");

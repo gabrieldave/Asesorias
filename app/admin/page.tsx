@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { LogOut, Calendar, DollarSign, Users, Plus, Trash2, Edit2 } from "lucide-react";
 import type { Service, AvailabilitySlot, Booking } from "@/types/database.types";
 import { getActiveServices } from "@/lib/supabase/queries";
+import ServiceForm from "@/components/ServiceForm";
 
 export default function AdminDashboard() {
   const [services, setServices] = useState<Service[]>([]);
@@ -14,6 +15,8 @@ export default function AdminDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"services" | "slots" | "bookings">("services");
+  const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -78,6 +81,16 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleEditService = (service: Service) => {
+    setEditingService(service);
+    setIsServiceFormOpen(true);
+  };
+
+  const handleCreateService = () => {
+    setEditingService(null);
+    setIsServiceFormOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -134,17 +147,38 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold uppercase">Servicios</h2>
+                <button
+                  onClick={handleCreateService}
+                  className="flex items-center gap-2 px-4 py-2 bg-profit text-background border-terminal hover-terminal"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="text-sm font-semibold uppercase">Nuevo Servicio</span>
+                </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {services.map((service) => (
                   <div key={service.id} className="border-terminal p-4">
-                    <h3 className="text-xl font-bold mb-2">{service.title}</h3>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-xl font-bold">{service.title}</h3>
+                      <span
+                        className={`text-xs px-2 py-1 ${
+                          service.active
+                            ? "bg-profit/20 text-profit border border-profit"
+                            : "bg-loss/20 text-loss border border-loss"
+                        }`}
+                      >
+                        {service.active ? "Activo" : "Inactivo"}
+                      </span>
+                    </div>
                     <p className="text-profit text-2xl font-bold mb-2">
                       ${service.price.toLocaleString("es-CL")}
                     </p>
                     <p className="text-foreground/70 text-sm mb-4">{service.description}</p>
                     <div className="flex gap-2">
-                      <button className="flex-1 px-3 py-2 border-terminal hover-terminal text-sm">
+                      <button
+                        onClick={() => handleEditService(service)}
+                        className="flex-1 px-3 py-2 border-terminal hover-terminal text-sm"
+                      >
                         <Edit2 className="w-4 h-4 inline mr-2" />
                         Editar
                       </button>
@@ -260,6 +294,17 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* Service Form Modal */}
+      <ServiceForm
+        service={editingService}
+        isOpen={isServiceFormOpen}
+        onClose={() => {
+          setIsServiceFormOpen(false);
+          setEditingService(null);
+        }}
+        onSave={loadData}
+      />
     </div>
   );
 }
