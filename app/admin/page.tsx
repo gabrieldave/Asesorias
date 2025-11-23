@@ -260,7 +260,7 @@ export default function AdminDashboard() {
                         <p className="font-bold">{booking.customer_name}</p>
                         <p className="text-sm text-foreground/70">{booking.customer_email}</p>
                         <p className="text-xs text-foreground/50 font-mono mt-1">
-                          {new Date(booking.created_at).toLocaleString("es-CL")}
+                          {booking.created_at ? new Date(booking.created_at).toLocaleString("es-CL") : "N/A"}
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-2">
