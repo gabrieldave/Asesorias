@@ -36,8 +36,8 @@ export async function verifyAdminCredentials(
   try {
     const supabase = createServiceRoleClient();
     
-    // Buscar admin en la tabla admins
-    const { data: admin, error } = await (supabase.from('admins') as any)
+    // Buscar admin en la tabla admin_users
+    const { data: admin, error } = await (supabase.from('admin_users') as any)
       .select('*')
       .eq('email', email.toLowerCase().trim())
       .single();
@@ -77,7 +77,7 @@ export async function createOrUpdateAdmin(
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Buscar si ya existe
-    const { data: existingAdmin } = await (supabase.from('admins') as any)
+    const { data: existingAdmin } = await (supabase.from('admin_users') as any)
       .select('*')
       .eq('email', email.toLowerCase().trim())
       .single();
@@ -85,7 +85,7 @@ export async function createOrUpdateAdmin(
     if (existingAdmin) {
       const existingAdminData = existingAdmin as any;
       // Actualizar
-      const { data: admin, error } = await (supabase.from('admins') as any)
+      const { data: admin, error } = await (supabase.from('admin_users') as any)
         .update({
           password_hash: hashedPassword,
           name: name || existingAdminData.name,
@@ -108,11 +108,12 @@ export async function createOrUpdateAdmin(
       };
     } else {
       // Crear nuevo
-      const { data: admin, error } = await (supabase.from('admins') as any)
+      const { data: admin, error } = await (supabase.from('admin_users') as any)
         .insert({
           email: email.toLowerCase().trim(),
           password_hash: hashedPassword,
           name: name || null,
+          active: true,
         })
         .select()
         .single();

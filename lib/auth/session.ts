@@ -61,7 +61,7 @@ export async function getAdminSession(): Promise<AdminSession | null> {
 
     // Verificar que el admin existe
     const supabase = createServiceRoleClient();
-    const { data: admin, error } = await (supabase.from('admins') as any)
+    const { data: admin, error } = await (supabase.from('admin_users') as any)
       .select('id, email, name')
       .eq('email', adminEmail)
       .single();
