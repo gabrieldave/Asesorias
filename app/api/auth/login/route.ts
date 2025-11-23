@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear sesión simple usando cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionToken = Buffer.from(
       `${admin.id}:${admin.email}:${Date.now()}`
     ).toString("base64");
