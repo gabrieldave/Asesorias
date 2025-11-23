@@ -67,7 +67,7 @@ export async function createGoogleCalendarEvent(
     eventDescription += `\n\nCliente: ${attendeeName} (${attendeeEmail})`;
 
     // Preparar datos del evento
-    const eventData = {
+    const eventPayload = {
       summary: title,
       description: eventDescription,
       start: {
@@ -95,10 +95,10 @@ export async function createGoogleCalendarEvent(
     };
 
     console.log("📅 Creando evento con datos:", {
-      title: eventData.summary,
-      start: eventData.start.dateTime,
-      end: eventData.end.dateTime,
-      attendees: eventData.attendees.map(a => a.email),
+      title: eventPayload.summary,
+      start: eventPayload.start.dateTime,
+      end: eventPayload.end.dateTime,
+      attendees: eventPayload.attendees.map(a => a.email),
     });
 
     // Crear evento en Google Calendar
@@ -110,7 +110,7 @@ export async function createGoogleCalendarEvent(
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(eventData),
+        body: JSON.stringify(eventPayload),
       }
     );
 
