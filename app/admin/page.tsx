@@ -65,7 +65,27 @@ export default function AdminDashboard() {
       if (response.ok && data.success) {
         setTestResult(`✅ Éxito: Evento creado con ID ${data.eventId}. Revisa tu Google Calendar.`);
       } else {
-        setTestResult(`❌ Error: ${data.error || "No se pudo crear el evento"}`);
+        let errorMsg = `❌ Error: ${data.error || "No se pudo crear el evento"}`;
+        if (data.details) {
+          errorMsg += `\n\n${data.details}`;
+        }
+        if (data.possibleCauses && data.possibleCauses.length > 0) {
+          errorMsg += `\n\nPosibles causas:`;
+          data.possibleCauses.forEach((cause: string) => {
+            errorMsg += `\n  • ${cause}`;
+          });
+        }
+        if (data.nextSteps && data.nextSteps.length > 0) {
+          errorMsg += `\n\nPróximos pasos:`;
+          data.nextSteps.forEach((step: string) => {
+            errorMsg += `\n  ${step}`;
+          });
+        }
+        if (data.missingVariables && data.missingVariables.length > 0) {
+          errorMsg += `\n\nVariables faltantes: ${data.missingVariables.join(", ")}`;
+          errorMsg += `\n\nVe a Vercel → Settings → Environment Variables y agrega estas variables.`;
+        }
+        setTestResult(errorMsg);
       }
     } catch (error: any) {
       setTestResult(`❌ Error de conexión: ${error.message}`);
@@ -491,9 +511,11 @@ export default function AdminDashboard() {
                           {testingGoogleCalendar ? "Probando..." : "Probar Google Calendar"}
                         </button>
                         {testResult && (
-                          <p className={`text-xs mt-2 ${testResult.includes("✅") ? "text-profit" : "text-loss"}`}>
-                            {testResult}
-                          </p>
+                          <div className={`text-xs mt-2 ${testResult.includes("✅") ? "text-profit" : "text-loss"}`}>
+                            <pre className="whitespace-pre-wrap font-mono text-xs bg-background/50 p-2 border-terminal mt-2">
+                              {testResult}
+                            </pre>
+                          </div>
                         )}
                         <p className="text-xs text-foreground/50 mt-2">
                           💡 Si la prueba falla, revisa los logs de Vercel para ver el error específico

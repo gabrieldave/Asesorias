@@ -116,8 +116,30 @@ export async function createGoogleCalendarEvent(
 
     if (!eventResponse.ok) {
       const errorData = await eventResponse.json().catch(() => ({}));
-      console.error("❌ Error creando evento en Google Calendar:", errorData);
-      console.error("Status:", eventResponse.status, eventResponse.statusText);
+      const status = eventResponse.status;
+      const statusText = eventResponse.statusText;
+      
+      console.error("❌ Error creando evento en Google Calendar");
+      console.error("Status:", status, statusText);
+      console.error("Error data:", errorData);
+      
+      // Mensajes específicos según el código de error
+      if (status === 401) {
+        console.error("🔑 Error 401: El access token es inválido o ha expirado");
+        console.error("💡 Solución: Verifica que el refresh token sea válido y que las credenciales OAuth2 estén correctas");
+      } else if (status === 403) {
+        console.error("🚫 Error 403: No tienes permisos para crear eventos en este calendario");
+        console.error("💡 Solución: Verifica que:");
+        console.error("   1. El refresh token sea válido");
+        console.error("   2. La API de Google Calendar esté habilitada en tu proyecto");
+        console.error("   3. El scope 'https://www.googleapis.com/auth/calendar' esté incluido");
+        console.error("   4. El email asociado al refresh token tenga permisos en el calendario");
+      } else if (status === 404) {
+        console.error("❌ Error 404: El calendario no existe o no tienes acceso");
+      } else {
+        console.error("❌ Error desconocido:", status, statusText);
+      }
+      
       return null;
     }
 
