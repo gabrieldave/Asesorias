@@ -38,7 +38,8 @@ export async function createGoogleCalendarEvent(
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json().catch(() => ({}));
-      console.error("Failed to get Google Calendar access token:", errorData);
+      console.error("❌ Error obteniendo access token de Google Calendar:", errorData);
+      console.error("Status:", tokenResponse.status, tokenResponse.statusText);
       return null;
     }
 
@@ -101,14 +102,20 @@ export async function createGoogleCalendarEvent(
 
     if (!eventResponse.ok) {
       const errorData = await eventResponse.json().catch(() => ({}));
-      console.error("Failed to create Google Calendar event:", errorData);
+      console.error("❌ Error creando evento en Google Calendar:", errorData);
+      console.error("Status:", eventResponse.status, eventResponse.statusText);
       return null;
     }
 
     const eventData = await eventResponse.json();
+    console.log("✅ Evento creado en Google Calendar:", eventData.id);
+    console.log("📅 Título:", eventData.summary);
+    console.log("🕐 Inicio:", eventData.start?.dateTime);
+    console.log("🕐 Fin:", eventData.end?.dateTime);
     return eventData.id || null;
-  } catch (error) {
-    console.error("Error creating Google Calendar event:", error);
+  } catch (error: any) {
+    console.error("❌ Error inesperado creando evento en Google Calendar:", error);
+    console.error("Stack:", error.stack);
     return null;
   }
 }

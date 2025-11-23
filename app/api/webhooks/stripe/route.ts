@@ -211,12 +211,15 @@ export async function POST(request: NextRequest) {
           );
 
           if (gcalEventId) {
-            console.log("✅ Evento de Google Calendar creado:", gcalEventId);
+            console.log("✅ Evento de Google Calendar creado exitosamente!");
+            console.log("📅 Event ID:", gcalEventId);
           } else {
             console.log("⚠️ No se pudo crear el evento en Google Calendar");
+            console.log("💡 Revisa los logs anteriores para ver el error específico");
           }
-        } catch (error) {
-          console.error("❌ Error creando evento en Google Calendar:", error);
+        } catch (error: any) {
+          console.error("❌ Error inesperado creando evento en Google Calendar:", error);
+          console.error("Stack:", error.stack);
         }
       } else {
         if (!hasGCalConfig) {
