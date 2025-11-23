@@ -85,12 +85,45 @@ Se han insertado 3 servicios de ejemplo:
     └── manifest.json       # Manifest PWA
 ```
 
-## Próximos Pasos
+## Funcionalidades Implementadas
 
-1. ✅ Configurar Supabase y crear esquema de base de datos
-2. ⏳ Implementar autenticación para admin
-3. ⏳ Integrar Stripe Checkout
-4. ⏳ Configurar webhooks de Stripe
-5. ⏳ Integrar Zoom API y Google Calendar API
-6. ⏳ Configurar Resend para emails
+### ✅ Completado
+
+1. ✅ **Base de Datos Supabase** - Tablas creadas con RLS
+2. ✅ **Autenticación Admin** - Login con Supabase Auth (`/login`)
+3. ✅ **Dashboard Admin** - Gestión de servicios, slots y reservas (`/admin`)
+4. ✅ **Landing Page** - Hero, servicios y social proof con estilo Terminal
+5. ✅ **Sistema de Reservas** - Modal de booking con selección de slots
+6. ✅ **Stripe Checkout** - Integración completa de pagos
+7. ✅ **Webhook Stripe** - Procesamiento automático de pagos
+8. ✅ **Resend Emails** - Envío de confirmaciones (requiere API key)
+9. ✅ **Integraciones Placeholder** - Zoom y Google Calendar (listos para configurar)
+
+## Rutas de la Aplicación
+
+- `/` - Landing page pública
+- `/login` - Login para administradores
+- `/admin` - Dashboard de administración (protegido)
+- `/success` - Página de confirmación después del pago
+- `/api/checkout/create` - API para crear sesión de Stripe
+- `/api/webhooks/stripe` - Webhook para procesar pagos de Stripe
+
+## Configuración de Variables de Entorno
+
+Copia `env.example` a `.env.local` y completa las siguientes variables:
+
+- **Supabase**: Ya configurado para proyecto "calculadora"
+- **Stripe**: Necesitas tus claves de Stripe (publishable y secret)
+- **Stripe Webhook**: Configura el webhook en Stripe Dashboard apuntando a `/api/webhooks/stripe`
+- **Resend**: API key para envío de emails
+- **Zoom**: Credenciales de Zoom API (opcional)
+- **Google Calendar**: Credenciales de Google Calendar API (opcional)
+- **Admin Email**: Email del administrador para recibir notificaciones
+
+## Notas Importantes
+
+- Las integraciones de Zoom y Google Calendar están como placeholders y requieren configuración adicional
+- El webhook de Stripe debe configurarse en el dashboard de Stripe
+- Los emails de Resend requieren verificación de dominio
+- El admin debe crear una cuenta en Supabase Auth para poder hacer login
 
