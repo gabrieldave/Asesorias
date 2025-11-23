@@ -22,6 +22,8 @@ export default function AdminDashboard() {
   const [isSlotFormOpen, setIsSlotFormOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [integrationsStatus, setIntegrationsStatus] = useState<any>(null);
+  const [testingGoogleCalendar, setTestingGoogleCalendar] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,6 +44,33 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error("Error loading integrations status:", error);
+    }
+  };
+
+  const testGoogleCalendar = async () => {
+    setTestingGoogleCalendar(true);
+    setTestResult(null);
+    try {
+      const response = await fetch("/api/admin/test-google-calendar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          email: integrationsStatus?.notificationsEmail || "todossomostr4ders@gmail.com",
+        }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setTestResult(`✅ Éxito: Evento creado con ID ${data.eventId}. Revisa tu Google Calendar.`);
+      } else {
+        setTestResult(`❌ Error: ${data.error || "No se pudo crear el evento"}`);
+      }
+    } catch (error: any) {
+      setTestResult(`❌ Error de conexión: ${error.message}`);
+    } finally {
+      setTestingGoogleCalendar(false);
     }
   };
 
@@ -436,18 +465,39 @@ export default function AdminDashboard() {
                           : "No Configurado"}
                       </span>
                     </div>
-                    {!integrationsStatus.integrations.googleCalendar.configured && (
+                    {!integrationsStatus.integrations.googleCalendar.configured ? (
                       <div className="mt-2">
                         <p className="text-sm text-foreground/70 mb-1">
                           Variables de entorno faltantes:
                         </p>
-                        <ul className="list-disc list-inside text-xs text-loss">
+                        <ul className="list-disc list-inside text-xs text-loss mb-3">
                           {integrationsStatus.integrations.googleCalendar.missing.map(
                             (varName: string) => (
                               <li key={varName}>{varName}</li>
                             )
                           )}
                         </ul>
+                        <p className="text-xs text-foreground/50">
+                          ⚠️ Configura estas variables en Vercel → Settings → Environment Variables
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mt-3">
+                        <button
+                          onClick={testGoogleCalendar}
+                          disabled={testingGoogleCalendar}
+                          className="px-4 py-2 border-terminal hover-terminal text-sm font-semibold uppercase disabled:opacity-50"
+                        >
+                          {testingGoogleCalendar ? "Probando..." : "Probar Google Calendar"}
+                        </button>
+                        {testResult && (
+                          <p className={`text-xs mt-2 ${testResult.includes("✅") ? "text-profit" : "text-loss"}`}>
+                            {testResult}
+                          </p>
+                        )}
+                        <p className="text-xs text-foreground/50 mt-2">
+                          💡 Si la prueba falla, revisa los logs de Vercel para ver el error específico
+                        </p>
                       </div>
                     )}
                   </div>
