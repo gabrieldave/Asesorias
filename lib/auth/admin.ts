@@ -37,23 +37,34 @@ export async function verifyAdminCredentials(
     const supabase = createServiceRoleClient();
     
     // Buscar admin en la tabla admin_users
+    const emailNormalized = email.toLowerCase().trim();
+    console.log('🔍 Buscando admin con email:', emailNormalized);
+    
     const { data: admin, error } = await (supabase.from('admin_users') as any)
       .select('*')
-      .eq('email', email.toLowerCase().trim())
+      .eq('email', emailNormalized)
       .single();
 
     if (error || !admin) {
-      console.error('Admin not found:', error);
+      console.error('❌ Admin not found:', error);
       return null;
     }
 
+    console.log('✅ Admin encontrado:', admin.email, 'ID:', admin.id);
+
     // Verificar contraseña
     const adminData = admin as any;
+    console.log('🔐 Verificando contraseña...');
     const isValid = await bcrypt.compare(password, adminData.password_hash);
     
+    console.log('🔐 Resultado de verificación:', isValid);
+    
     if (!isValid) {
+      console.error('❌ Contraseña inválida');
       return null;
     }
+
+    console.log('✅ Credenciales válidas');
 
     return {
       id: adminData.id,
