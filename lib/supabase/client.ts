@@ -8,3 +8,6 @@ export function createBrowserClient() {
   );
 }
 
+// Exportar instancia para compatibilidad con código existente
+export const supabase = createBrowserClient();
+

@@ -32,3 +32,45 @@ export interface Database {
   }
 }
 
+// Tipos específicos para la aplicación
+export interface Service {
+  id: number;
+  name?: string;
+  title: string;
+  description: string;
+  price: number;
+  duration?: number;
+  features?: string[];
+  active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AvailabilitySlot {
+  id: number;
+  service_id: number;
+  start_time: string;
+  end_time: string;
+  is_available: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Booking {
+  id: number;
+  service_id: number;
+  slot_id: number;
+  customer_name: string;
+  customer_email: string;
+  status?: string;
+  payment_status?: string;
+  stripe_payment_intent_id?: string;
+  stripe_session_id?: string;
+  zoom_meeting_id?: string;
+  zoom_meeting_url?: string;
+  zoom_link?: string;
+  gcal_event_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
