@@ -44,8 +44,7 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     // Verificar que el slot esté disponible
-    const { data: slot, error: slotError } = await supabase
-      .from("availability_slots")
+    const { data: slot, error: slotError } = await (supabase.from("availability_slots") as any)
       .select("*")
       .eq("id", slotId)
       .eq("is_booked", false)
@@ -59,8 +58,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Obtener el servicio
-    const { data: serviceData, error: serviceError } = await supabase
-      .from("services")
+    const { data: serviceData, error: serviceError } = await (supabase.from("services") as any)
       .select("*")
       .eq("id", serviceId)
       .eq("active", true)
@@ -79,16 +77,14 @@ export async function GET(request: NextRequest) {
     const oneHourAgo = new Date();
     oneHourAgo.setHours(oneHourAgo.getHours() - 1);
     
-    await supabase
-      .from("bookings")
+    await (supabase.from("bookings") as any)
       .delete()
       .eq("slot_id", parseInt(slotId))
       .eq("payment_status", "pending")
       .lt("created_at", oneHourAgo.toISOString());
 
     // Verificar si ya existe un booking para este slot (pending o paid)
-    const { data: existingBooking, error: existingBookingError } = await supabase
-      .from("bookings")
+    const { data: existingBooking, error: existingBookingError } = await (supabase.from("bookings") as any)
       .select("*")
       .eq("slot_id", parseInt(slotId))
       .in("payment_status", ["pending", "paid"])
@@ -110,8 +106,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Crear booking pendiente usando el cliente del servidor
-    const { data: booking, error: bookingError } = await supabase
-      .from("bookings")
+    const { data: booking, error: bookingError } = await (supabase.from("bookings") as any)
       .insert({
         customer_email: customerEmail,
         customer_name: customerName,
@@ -121,7 +116,7 @@ export async function GET(request: NextRequest) {
         stripe_session_id: null,
         zoom_link: null,
         gcal_event_id: null,
-      } as any)
+      })
       .select()
       .single();
 
@@ -142,6 +137,8 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    const bookingData = booking as Booking;
 
     // Crear sesión de Stripe Checkout
     // Stripe requiere el precio en centavos para USD (multiplicar por 100)
@@ -167,7 +164,7 @@ export async function GET(request: NextRequest) {
       cancel_url: `${request.nextUrl.origin}/?canceled=true`,
       customer_email: customerEmail,
       metadata: {
-        booking_id: booking.id.toString(),
+        booking_id: bookingData.id.toString(),
         service_id: serviceId,
         slot_id: slotId,
       },
