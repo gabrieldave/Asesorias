@@ -1,24 +1,39 @@
-import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
-import type { Database } from "@/types/database.types";
+import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
+import type { Database } from '@/types/database.types';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-export function createServerClient() {
-  const cookieStore = cookies();
-
+export async function createServerClient() {
+  const cookieStore = await cookies();
+  
   return createClient<Database>(
-    supabaseUrl || "https://placeholder.supabase.co",
-    supabaseAnonKey || "placeholder",
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       auth: {
-        persistSession: false,
-      },
-      global: {
-        headers: {
-          cookie: cookieStore.toString(),
+        storage: {
+          getItem: (key: string) => {
+            return cookieStore.get(key)?.value ?? null;
+          },
+          setItem: async (key: string, value: string) => {
+            cookieStore.set(key, value);
+          },
+          removeItem: async (key: string) => {
+            cookieStore.delete(key);
+          },
         },
+      },
+    }
+  );
+}
+
+export function createServiceRoleClient() {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
       },
     }
   );

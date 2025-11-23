@@ -1,17 +1,9 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Asesorías Todos Somos Traders",
-  description: "Domina la estructura del mercado con mentorías de trading profesionales",
-  manifest: "/manifest.json",
-};
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  themeColor: "#0a0a0a",
+  title: "Asesorías - Todos Somos Traders",
+  description: "Sistema de gestión de asesorías",
 };
 
 export default function RootLayout({
@@ -20,13 +12,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <head>
-        {/* Iconos opcionales - se pueden agregar después */}
-      </head>
-      <body className="min-h-screen bg-background text-foreground" suppressHydrationWarning>
-        {children}
-      </body>
+    <html lang="es">
+      <body>{children}</body>
     </html>
   );
 }
