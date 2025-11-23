@@ -165,4 +165,75 @@ export async function createGoogleCalendarEvent(
   }
 }
 
+/**
+ * Elimina un evento de Google Calendar
+ */
+export async function deleteGoogleCalendarEvent(eventId: string): Promise<boolean> {
+  try {
+    const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
+    const refreshToken = process.env.GOOGLE_CALENDAR_REFRESH_TOKEN;
 
+    if (!clientId || !clientSecret || !refreshToken) {
+      console.log("⚠️ Google Calendar credentials not configured, no se puede eliminar el evento");
+      return false;
+    }
+
+    if (!eventId) {
+      console.log("⚠️ No hay event ID para eliminar");
+      return false;
+    }
+
+    // Obtener access token
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      console.error("❌ Error obteniendo access token para eliminar evento:", await tokenResponse.json().catch(() => ({})));
+      return false;
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+
+    if (!accessToken) {
+      console.error("❌ No access token received from Google");
+      return false;
+    }
+
+    // Eliminar evento
+    const deleteResponse = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}?sendUpdates=all`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (deleteResponse.ok || deleteResponse.status === 404) {
+      // 404 significa que el evento ya no existe, lo consideramos éxito
+      console.log("✅ Evento eliminado de Google Calendar:", eventId);
+      return true;
+    } else {
+      const errorData = await deleteResponse.json().catch(() => ({}));
+      console.error("❌ Error eliminando evento de Google Calendar:", errorData);
+      console.error("Status:", deleteResponse.status, deleteResponse.statusText);
+      return false;
+    }
+  } catch (error: any) {
+    console.error("❌ Error inesperado eliminando evento de Google Calendar:", error);
+    return false;
+  }
+}
