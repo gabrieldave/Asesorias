@@ -15,7 +15,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // Verificar que el slot no esté reservado
     const { data: slot, error: fetchError } = await supabase

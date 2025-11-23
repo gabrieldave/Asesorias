@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // Limpiar bookings antiguos o cancelados
     const { error } = await supabase

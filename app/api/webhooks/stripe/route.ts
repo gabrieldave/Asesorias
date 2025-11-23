@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session;
 
     try {
-      const supabase = createServerClient();
+      const supabase = await createServerClient();
 
       // Obtener el booking usando metadata o session_id
       const bookingId = session.metadata?.booking_id;
