@@ -287,14 +287,13 @@ export async function POST(request: NextRequest) {
                   <p><strong>Servicio:</strong> ${service?.title || "N/A"}</p>
                   <p><strong>Fecha y Hora:</strong> ${slotDateStr} - ${slotEndStr} (Hora de México)</p>
                   <p><strong>Precio:</strong> $${service?.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "N/A"} USD</p>
-                  ${zoomLink ? `<p><strong>Link de Zoom:</strong> <a href="${zoomLink}">${zoomLink}</a></p>` : ""}
                 </div>
                 
-                ${zoomLink ? `<p style="background: #e8f5e9; padding: 10px; border-radius: 5px; border-left: 4px solid #00ff00;">
-                  <strong>🔗 Link de Zoom:</strong><br>
-                  <a href="${zoomLink}" style="color: #0066cc;">${zoomLink}</a><br>
-                  <small>Guarda este link para acceder a tu sesión</small>
-                </p>` : ""}
+                ${zoomLink ? `<div style="background: #e8f5e9; padding: 15px; border-radius: 5px; border-left: 4px solid #00ff00; margin: 20px 0;">
+                  <p style="margin: 0 0 10px 0;"><strong>🔗 Link de Zoom:</strong></p>
+                  <p style="margin: 0;"><a href="${zoomLink}" style="color: #0066cc; word-break: break-all;">${zoomLink}</a></p>
+                  <p style="margin: 10px 0 0 0; font-size: 12px; color: #666;">Guarda este link para acceder a tu sesión</p>
+                </div>` : ""}
                 
                 <p>Gracias por confiar en nosotros. ¡Te esperamos!</p>
               </div>
