@@ -8,8 +8,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createServerClient();
 
     // Limpiar bookings antiguos o cancelados
-    const { error } = await supabase
-      .from("bookings")
+    const { error } = await (supabase.from("bookings") as any)
       .delete()
       .eq("payment_status", "failed")
       .lt("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // 30 días

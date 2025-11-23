@@ -16,8 +16,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createServerClient();
 
-    const { data, error } = await supabase
-      .from("availability_slots")
+    const { data, error } = await (supabase.from("availability_slots") as any)
       .insert({
         start_time,
         end_time,

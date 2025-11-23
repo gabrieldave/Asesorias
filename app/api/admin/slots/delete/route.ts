@@ -18,8 +18,7 @@ export async function DELETE(request: NextRequest) {
     const supabase = await createServerClient();
 
     // Verificar que el slot no esté reservado
-    const { data: slot, error: fetchError } = await supabase
-      .from("availability_slots")
+    const { data: slot, error: fetchError } = await (supabase.from("availability_slots") as any)
       .select("*")
       .eq("id", parseInt(id))
       .single();
@@ -38,8 +37,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const { error } = await supabase
-      .from("availability_slots")
+    const { error } = await (supabase.from("availability_slots") as any)
       .delete()
       .eq("id", parseInt(id));
 
