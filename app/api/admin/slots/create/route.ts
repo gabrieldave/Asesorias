@@ -173,7 +173,6 @@ export async function POST(request: NextRequest) {
             start_time: slot.start_time,
             end_time: slot.end_time,
             service_id: service_id || null,
-            is_available: true,
             is_booked: false,
           };
         })
@@ -251,7 +250,6 @@ export async function POST(request: NextRequest) {
         start_time,
         end_time,
         service_id: service_id || null,
-        is_available: true,
         is_booked: false,
       })
       .select()
