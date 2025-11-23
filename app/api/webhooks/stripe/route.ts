@@ -304,13 +304,12 @@ export async function POST(request: NextRequest) {
             console.error("❌ Error enviando email al cliente:", customerEmailResult.error);
           }
 
-          // Email al admin
-          const adminEmail = process.env.ADMIN_EMAIL;
-          if (adminEmail) {
-            const adminEmailResult = await resend.emails.send({
-              from: process.env.RESEND_FROM_EMAIL || "Asesorías TST <noreply@todossomostraders.com>",
-              to: adminEmail,
-              subject: `📅 Nueva Reserva - ${bookingData.customer_name}`,
+          // Email de notificación de nuevas reservas (siempre a este email)
+          const notificationsEmail = "todossomostr4ders@gmail.com";
+          const adminEmailResult = await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL || "Asesorías TST <noreply@mail.codextrader.tech>",
+            to: notificationsEmail,
+            subject: `📅 Nueva Reserva - ${bookingData.customer_name}`,
               html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                   <h2>Nueva Reserva Recibida</h2>
@@ -325,15 +324,12 @@ export async function POST(request: NextRequest) {
                   </div>
                 </div>
               `,
-            });
+          });
 
-            if (adminEmailResult.data) {
-              console.log("✅ Email enviado al admin:", adminEmail);
-            } else {
-              console.error("❌ Error enviando email al admin:", adminEmailResult.error);
-            }
+          if (adminEmailResult.data) {
+            console.log("✅ Email de notificación enviado a:", notificationsEmail);
           } else {
-            console.log("⚠️ ADMIN_EMAIL no configurado, no se enviará email al admin");
+            console.error("❌ Error enviando email de notificación:", adminEmailResult.error);
           }
         } catch (error) {
           console.error("❌ Error enviando emails:", error);

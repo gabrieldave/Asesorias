@@ -516,30 +516,39 @@ export default function AdminDashboard() {
                     )}
                   </div>
 
-                  {/* Admin Email */}
+                  {/* Notifications Email */}
                   <div className="border-terminal p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-bold">Email del Admin</h3>
-                      <span
-                        className={`text-xs px-2 py-1 ${
-                          integrationsStatus.adminEmail
-                            ? "bg-profit/20 text-profit border border-profit"
-                            : "bg-loss/20 text-loss border border-loss"
-                        }`}
-                      >
-                        {integrationsStatus.adminEmail ? "Configurado" : "No Configurado"}
+                      <h3 className="text-lg font-bold">Email de Notificaciones</h3>
+                      <span className="text-xs px-2 py-1 bg-profit/20 text-profit border border-profit">
+                        Configurado
                       </span>
                     </div>
-                    {integrationsStatus.adminEmail ? (
+                    <p className="text-sm text-foreground/70 mt-2">
+                      {integrationsStatus.notificationsEmail || "todossomostr4ders@gmail.com"}
+                    </p>
+                    <p className="text-xs text-foreground/50 mt-1">
+                      Aquí llegan todas las notificaciones de nuevas reservas
+                    </p>
+                  </div>
+
+                  {/* Admin Email (para otras funciones) */}
+                  {integrationsStatus.adminEmail && (
+                    <div className="border-terminal p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-bold">Email del Admin</h3>
+                        <span className="text-xs px-2 py-1 bg-profit/20 text-profit border border-profit">
+                          Configurado
+                        </span>
+                      </div>
                       <p className="text-sm text-foreground/70 mt-2">
                         {integrationsStatus.adminEmail}
                       </p>
-                    ) : (
-                      <p className="text-xs text-loss mt-2">
-                        Variable ADMIN_EMAIL no configurada
+                      <p className="text-xs text-foreground/50 mt-1">
+                        Admin para crear slots y gestionar el sistema: david.del.rio.colin@gmail.com
                       </p>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8">

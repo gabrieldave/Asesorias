@@ -57,7 +57,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       integrations,
-      adminEmail: process.env.ADMIN_EMAIL || null,
+      notificationsEmail: "todossomostr4ders@gmail.com", // Email donde llegan las notificaciones de reservas
+      adminEmail: process.env.ADMIN_EMAIL || null, // Email del admin (para otras funciones)
     });
   } catch (error: any) {
     console.error("Error getting integrations status:", error);
