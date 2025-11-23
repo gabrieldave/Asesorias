@@ -139,6 +139,64 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteAllBookings = async () => {
+    if (!confirm("⚠️ ADVERTENCIA: ¿Estás seguro de eliminar TODAS las reservas? Esta acción no se puede deshacer.")) return;
+
+    try {
+      const response = await fetch("/api/admin/bookings/delete-all", {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Error response:", response.status, data);
+        alert(`Error al eliminar las reservas (${response.status}): ${data.error || "Error desconocido"}`);
+        return;
+      }
+
+      if (data.success) {
+        alert(`✅ ${data.message || `${data.count} reserva(s) eliminada(s)`}`);
+        loadData();
+      } else {
+        alert("Error al eliminar las reservas: " + (data.error || "Error desconocido"));
+      }
+    } catch (error: any) {
+      console.error("Error deleting all bookings:", error);
+      alert("Error al eliminar las reservas: " + (error.message || "Error de conexión"));
+    }
+  };
+
+  const handleDeleteAllSlots = async () => {
+    if (!confirm("⚠️ ADVERTENCIA: ¿Estás seguro de eliminar TODOS los slots? Esto también eliminará todas las reservas asociadas. Esta acción no se puede deshacer.")) return;
+
+    try {
+      const response = await fetch("/api/admin/slots/delete-all", {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Error response:", response.status, data);
+        alert(`Error al eliminar los slots (${response.status}): ${data.error || "Error desconocido"}`);
+        return;
+      }
+
+      if (data.success) {
+        alert(`✅ ${data.message || `${data.count} slot(s) eliminado(s)`}`);
+        loadData();
+      } else {
+        alert("Error al eliminar los slots: " + (data.error || "Error desconocido"));
+      }
+    } catch (error: any) {
+      console.error("Error deleting all slots:", error);
+      alert("Error al eliminar los slots: " + (error.message || "Error de conexión"));
+    }
+  };
+
   const handleCreateSlot = () => {
     setIsSlotFormOpen(true);
   };
@@ -255,13 +313,25 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold uppercase">Slots de Disponibilidad</h2>
-                <button
-                  onClick={handleCreateSlot}
-                  className="flex items-center gap-2 px-4 py-2 bg-profit text-background border-terminal hover-terminal"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="text-sm font-semibold uppercase">Nuevo Slot</span>
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCreateSlot}
+                    className="flex items-center gap-2 px-4 py-2 bg-profit text-background border-terminal hover-terminal"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="text-sm font-semibold uppercase">Nuevo Slot</span>
+                  </button>
+                  {slots.length > 0 && (
+                    <button
+                      onClick={handleDeleteAllSlots}
+                      className="flex items-center gap-2 px-4 py-2 border-terminal hover-terminal text-loss bg-loss/10"
+                      title="Eliminar todos los slots y sus reservas"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="text-sm font-semibold uppercase">Eliminar Todos</span>
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {slots.map((slot) => (
@@ -320,6 +390,16 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold uppercase">Reservas</h2>
+                {bookings.length > 0 && (
+                  <button
+                    onClick={handleDeleteAllBookings}
+                    className="flex items-center gap-2 px-4 py-2 border-terminal hover-terminal text-loss bg-loss/10"
+                    title="Eliminar todas las reservas"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="text-sm font-semibold uppercase">Eliminar Todas</span>
+                  </button>
+                )}
               </div>
               <div className="space-y-2">
                 {bookings.map((booking) => (
