@@ -94,7 +94,13 @@ export default function Services() {
             <p className="text-foreground/70">No hay servicios disponibles en este momento.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          <div className={`grid grid-cols-1 ${
+            services.length === 4 
+              ? 'md:grid-cols-2 lg:grid-cols-4' 
+              : services.length === 3
+              ? 'md:grid-cols-3'
+              : 'md:grid-cols-2 lg:grid-cols-3'
+          } gap-6 lg:gap-6 max-w-7xl mx-auto`}>
             {services.map((service, index) => {
               // Determinar icono basado en el título
               const titleLower = service.title.toLowerCase();
@@ -114,45 +120,45 @@ export default function Services() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="border-terminal hover-terminal bg-background p-6 flex flex-col"
+                  className="border-terminal hover-terminal bg-background p-6 lg:p-7 flex flex-col h-full transition-all duration-300 group"
                 >
-                  {/* Badge */}
-                  <div className="mb-4">
-                    <span className="inline-block px-3 py-1 text-xs font-semibold uppercase tracking-wider border border-profit text-profit bg-profit/10">
+                  {/* Badge e Icon en la misma línea */}
+                  <div className="flex items-center justify-between mb-5">
+                    <span className="inline-block px-3 py-1.5 text-xs font-semibold uppercase tracking-wider border border-profit text-profit bg-profit/10">
                       {level}
                     </span>
-                  </div>
-
-                  {/* Icon */}
-                  <div className="mb-4">
-                    <Icon className="w-8 h-8 text-profit" />
+                    <div className="p-2 border border-profit/30 rounded group-hover:border-profit transition-colors">
+                      <Icon className="w-5 h-5 text-profit" />
+                    </div>
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-2xl font-bold mb-2 uppercase tracking-wide">
+                  <h3 className="text-xl lg:text-2xl font-bold mb-3 uppercase tracking-wide leading-tight min-h-[3rem]">
                     {service.title}
                   </h3>
 
                   {/* Price */}
-                  <div className="mb-4">
-                    <span className="text-3xl font-bold text-profit">
-                      ${service.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                    <span className="text-foreground/70 ml-2">USD</span>
+                  <div className="mb-5 pb-4 border-b border-border/30">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl lg:text-4xl font-bold text-profit">
+                        ${service.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-foreground/60 text-sm">USD</span>
+                    </div>
                   </div>
 
                   {/* Description */}
-                  <p className="text-foreground/70 mb-6 text-sm">
+                  <p className="text-foreground/70 mb-5 text-sm leading-relaxed min-h-[3rem]">
                     {service.description}
                   </p>
 
                   {/* Features */}
-                  <ul className="flex-1 space-y-3 mb-6">
+                  <ul className="flex-1 space-y-2.5 mb-6 min-h-[8rem]">
                     {service.features && service.features.length > 0 ? (
                       service.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm">
+                        <li key={idx} className="flex items-start gap-2.5 text-sm">
                           <Check className="w-4 h-4 text-profit flex-shrink-0 mt-0.5" />
-                          <span className="text-foreground/80">{feature}</span>
+                          <span className="text-foreground/80 leading-relaxed text-[13px]">{feature}</span>
                         </li>
                       ))
                     ) : (
@@ -163,13 +169,13 @@ export default function Services() {
                   {/* CTA Button */}
                   <button
                     onClick={() => handleBooking(service)}
-                    className="w-full border-terminal hover-terminal py-3 bg-profit text-background font-semibold uppercase tracking-wider text-sm mt-auto"
+                    className="w-full border-terminal hover-terminal py-3.5 bg-profit text-background font-semibold uppercase tracking-wider text-sm mt-auto transition-all duration-200 hover:bg-profit/90 hover:shadow-lg hover:shadow-profit/20"
                   >
                     Agendar Sesión
                   </button>
 
                   {/* Availability indicator */}
-                  <div className="mt-4 text-xs text-foreground/50 text-center">
+                  <div className="mt-3 text-xs text-foreground/50 text-center">
                     {availableCount > 0 ? (
                       <span className="text-profit">
                         Solo quedan {availableCount} cupos disponibles
