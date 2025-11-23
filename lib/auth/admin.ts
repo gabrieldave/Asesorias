@@ -2,10 +2,10 @@ import { getUser } from './session';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import bcrypt from 'bcryptjs';
 
-export interface Admin {
-  id: string;
+export interface AdminUser {
+  id: number;
   email: string;
-  name?: string;
+  name: string | null;
 }
 
 export async function requireAdmin() {
@@ -28,54 +28,37 @@ export async function requireAdmin() {
   return user;
 }
 
+// Verificar credenciales de admin (email y password)
 export async function verifyAdminCredentials(
   email: string,
   password: string
-): Promise<Admin | null> {
+): Promise<AdminUser | null> {
   try {
     const supabase = createServiceRoleClient();
     
-    // Intentar obtener admin de la tabla admins si existe
+    // Buscar admin en la tabla admins
     const { data: admin, error } = await supabase
       .from('admins')
       .select('*')
-      .eq('email', email)
+      .eq('email', email.toLowerCase().trim())
       .single();
 
     if (error || !admin) {
-      // Fallback: usar variables de entorno
-      const adminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-      const adminPassword = process.env.ADMIN_PASSWORD;
-
-      if (!adminEmail || !adminPassword) {
-        return null;
-      }
-
-      if (email === adminEmail && password === adminPassword) {
-        return {
-          id: 'env-admin',
-          email: adminEmail,
-          name: 'Admin',
-        };
-      }
-
+      console.error('Admin not found:', error);
       return null;
     }
 
-    // Verificar contraseña con bcrypt
-    if (admin.password_hash) {
-      const isValid = await bcrypt.compare(password, admin.password_hash);
-      if (!isValid) {
-        return null;
-      }
-    } else if (admin.password && admin.password !== password) {
+    // Verificar contraseña
+    const isValid = await bcrypt.compare(password, admin.password_hash);
+    
+    if (!isValid) {
       return null;
     }
 
     return {
-      id: admin.id.toString(),
+      id: admin.id,
       email: admin.email,
-      name: admin.name || admin.email,
+      name: admin.name,
     };
   } catch (error) {
     console.error('Error verifying admin credentials:', error);
@@ -83,34 +66,33 @@ export async function verifyAdminCredentials(
   }
 }
 
+// Crear o actualizar admin
 export async function createOrUpdateAdmin(
   email: string,
   password: string,
   name?: string
-): Promise<Admin | null> {
+): Promise<AdminUser | null> {
   try {
     const supabase = createServiceRoleClient();
-    
-    // Hash de la contraseña
-    const passwordHash = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Intentar actualizar si existe
+    // Buscar si ya existe
     const { data: existingAdmin } = await supabase
       .from('admins')
       .select('*')
-      .eq('email', email)
+      .eq('email', email.toLowerCase().trim())
       .single();
 
     if (existingAdmin) {
-      // Actualizar admin existente
-      const { data: updatedAdmin, error } = await supabase
+      // Actualizar
+      const { data: admin, error } = await supabase
         .from('admins')
         .update({
-          password_hash: passwordHash,
+          password_hash: hashedPassword,
           name: name || existingAdmin.name,
           updated_at: new Date().toISOString(),
         })
-        .eq('email', email)
+        .eq('id', existingAdmin.id)
         .select()
         .single();
 
@@ -120,18 +102,18 @@ export async function createOrUpdateAdmin(
       }
 
       return {
-        id: updatedAdmin.id.toString(),
-        email: updatedAdmin.email,
-        name: updatedAdmin.name || updatedAdmin.email,
+        id: admin.id,
+        email: admin.email,
+        name: admin.name,
       };
     } else {
-      // Crear nuevo admin
-      const { data: newAdmin, error } = await supabase
+      // Crear nuevo
+      const { data: admin, error } = await supabase
         .from('admins')
         .insert({
-          email,
-          password_hash: passwordHash,
-          name: name || email,
+          email: email.toLowerCase().trim(),
+          password_hash: hashedPassword,
+          name: name || null,
         })
         .select()
         .single();
@@ -142,9 +124,9 @@ export async function createOrUpdateAdmin(
       }
 
       return {
-        id: newAdmin.id.toString(),
-        email: newAdmin.email,
-        name: newAdmin.name || newAdmin.email,
+        id: admin.id,
+        email: admin.email,
+        name: admin.name,
       };
     }
   } catch (error) {
@@ -152,4 +134,3 @@ export async function createOrUpdateAdmin(
     return null;
   }
 }
-

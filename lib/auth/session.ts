@@ -1,10 +1,11 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 
 export interface AdminSession {
-  id: string;
+  id: number;
   email: string;
-  name?: string;
+  name: string | null;
 }
 
 export async function getSession() {
@@ -47,6 +48,7 @@ export async function requireAuth() {
   return session;
 }
 
+// Verificar sesión de admin basada en cookies
 export async function getAdminSession(): Promise<AdminSession | null> {
   try {
     const cookieStore = await cookies();
@@ -57,27 +59,25 @@ export async function getAdminSession(): Promise<AdminSession | null> {
       return null;
     }
 
-    // Decodificar el token de sesión
-    try {
-      const decoded = Buffer.from(sessionToken, 'base64').toString('utf-8');
-      const [id, email] = decoded.split(':');
+    // Verificar que el admin existe
+    const supabase = createServiceRoleClient();
+    const { data: admin, error } = await supabase
+      .from('admins')
+      .select('id, email, name')
+      .eq('email', adminEmail)
+      .single();
 
-      if (email !== adminEmail) {
-        return null;
-      }
-
-      return {
-        id,
-        email,
-        name: adminEmail,
-      };
-    } catch (error) {
-      console.error('Error decoding session token:', error);
+    if (error || !admin) {
       return null;
     }
+
+    return {
+      id: admin.id,
+      email: admin.email,
+      name: admin.name,
+    };
   } catch (error) {
     console.error('Error getting admin session:', error);
     return null;
   }
 }
-
