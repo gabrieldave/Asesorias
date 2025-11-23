@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import type { Service } from "@/types/database.types";
 
@@ -25,6 +25,19 @@ export default function ServiceForm({
     active: service?.active ?? true,
   });
   const [loading, setLoading] = useState(false);
+
+  // Actualizar formData cuando cambie el prop service o cuando se abra el modal
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        title: service?.title || "",
+        price: service?.price || 0,
+        description: service?.description || "",
+        features: service?.features?.join("\n") || "",
+        active: service?.active ?? true,
+      });
+    }
+  }, [service, isOpen]);
 
   if (!isOpen) return null;
 
@@ -181,4 +194,3 @@ export default function ServiceForm({
     </div>
   );
 }
-
