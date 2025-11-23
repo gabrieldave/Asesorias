@@ -100,11 +100,35 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Validar que startTime < endTime
+      const [startHour, startMin] = startTime.split(":").map(Number);
+      const [endHour, endMin] = endTime.split(":").map(Number);
+      const startTimeMinutes = startHour * 60 + startMin;
+      const endTimeMinutes = endHour * 60 + endMin;
+
+      if (startTimeMinutes >= endTimeMinutes) {
+        return NextResponse.json(
+          { error: "La hora de inicio debe ser anterior a la hora de fin" },
+          { status: 400 }
+        );
+      }
+
+      // Validar que el rango de fechas sea válido
+      const startRangeDate = new Date(startRange);
+      const endRangeDate = new Date(endRange);
+      
+      if (startRangeDate >= endRangeDate) {
+        return NextResponse.json(
+          { error: "La fecha de inicio debe ser anterior a la fecha de fin" },
+          { status: 400 }
+        );
+      }
+
       // Generar todos los slots
       const slots = generateRecurringSlots(
         selectedDays,
-        new Date(startRange),
-        new Date(endRange),
+        startRangeDate,
+        endRangeDate,
         startTime,
         endTime,
         duration || 60
@@ -112,45 +136,105 @@ export async function POST(request: NextRequest) {
 
       if (slots.length === 0) {
         return NextResponse.json(
-          { error: "No se generaron slots con los criterios especificados" },
+          { error: "No se generaron slots con los criterios especificados. Verifica que los días seleccionados existan en el rango de fechas." },
           { status: 400 }
         );
       }
+
+      // Filtrar slots que están en el pasado
+      const now = new Date();
+      const validSlots = slots.filter((slot) => new Date(slot.start_time) > now);
+
+      if (validSlots.length === 0) {
+        return NextResponse.json(
+          { error: "Todos los slots generados están en el pasado. Por favor, selecciona fechas futuras." },
+          { status: 400 }
+        );
+      }
+
+      console.log(`📅 Generados ${slots.length} slots, ${validSlots.length} válidos (futuros)`);
 
       // Limitar a 500 slots por vez para evitar sobrecarga
-      if (slots.length > 500) {
+      if (validSlots.length > 500) {
         return NextResponse.json(
-          { error: `Se generarían ${slots.length} slots. Por favor, reduce el rango de fechas o días seleccionados. Máximo 500 slots por operación.` },
+          { error: `Se generarían ${validSlots.length} slots. Por favor, reduce el rango de fechas o días seleccionados. Máximo 500 slots por operación.` },
           { status: 400 }
         );
       }
 
-      // Preparar datos para insertar
-      const slotsToInsert = slots.map((slot) => ({
-        start_time: slot.start_time,
-        end_time: slot.end_time,
-        service_id: service_id || null,
-        is_available: true,
-        is_booked: false,
-      }));
+      // Preparar datos para insertar y validar
+      const slotsToInsert = validSlots
+        .map((slot) => {
+          // Validar que start_time < end_time
+          if (new Date(slot.start_time) >= new Date(slot.end_time)) {
+            return null;
+          }
+          return {
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+            service_id: service_id || null,
+            is_available: true,
+            is_booked: false,
+          };
+        })
+        .filter((slot) => slot !== null);
 
-      // Insertar todos los slots
-      const { data, error } = await (supabase.from("availability_slots") as any)
-        .insert(slotsToInsert)
-        .select();
-
-      if (error) {
-        console.error("Error creating recurring slots:", error);
+      if (slotsToInsert.length === 0) {
         return NextResponse.json(
-          { error: "Error al crear los slots recurrentes" },
+          { error: "No se generaron slots válidos con los criterios especificados" },
+          { status: 400 }
+        );
+      }
+
+      console.log(`📦 Intentando insertar ${slotsToInsert.length} slots...`);
+
+      // Insertar todos los slots en lotes de 100 para evitar problemas
+      const batchSize = 100;
+      const batches = [];
+      for (let i = 0; i < slotsToInsert.length; i += batchSize) {
+        batches.push(slotsToInsert.slice(i, i + batchSize));
+      }
+
+      const allInsertedSlots: any[] = [];
+      let hasError = false;
+      let lastError: any = null;
+
+      for (const batch of batches) {
+        const { data, error } = await (supabase.from("availability_slots") as any)
+          .insert(batch)
+          .select();
+
+        if (error) {
+          console.error("Error creating recurring slots batch:", error);
+          console.error("Error details:", JSON.stringify(error, null, 2));
+          hasError = true;
+          lastError = error;
+          break;
+        }
+
+        if (data) {
+          allInsertedSlots.push(...data);
+        }
+      }
+
+      if (hasError) {
+        const errorMessage = lastError?.message || lastError?.code || "Error desconocido";
+        console.error("Error completo:", lastError);
+        return NextResponse.json(
+          { 
+            error: `Error al crear los slots recurrentes: ${errorMessage}`,
+            details: lastError?.details || null
+          },
           { status: 500 }
         );
       }
 
+      console.log(`✅ ${allInsertedSlots.length} slots creados exitosamente`);
+
       return NextResponse.json({
         success: true,
-        count: slots.length,
-        slots: data,
+        count: allInsertedSlots.length,
+        slots: allInsertedSlots,
       });
     }
 
