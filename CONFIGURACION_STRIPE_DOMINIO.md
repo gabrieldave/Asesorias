@@ -131,11 +131,20 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
 
 Para que los clientes vean automáticamente los precios en su moneda local, debes habilitar la conversión de moneda en Stripe:
 
-1. **Habilita Currency Conversion en Checkout**
-   - Ve a [Stripe Dashboard](https://dashboard.stripe.com) → **Settings** → **Checkout** → **Checkout settings**
-   - Activa **"Currency conversion"** (Conversión de moneda)
-   - Activa **"Localized pricing"** (Precios localizados)
-   - Esto permitirá que Stripe muestre automáticamente el precio en la moneda del cliente
+1. **Habilita Currency Conversion en Checkout (PASO CRÍTICO)**
+   
+   **⚠️ SIN ESTE PASO, LOS PRECIOS SIEMPRE SE MOSTRARÁN EN USD**
+   
+   Pasos detallados:
+   - Ve a [Stripe Dashboard](https://dashboard.stripe.com)
+   - En el menú lateral, ve a **Settings** (Configuración)
+   - Busca y haz clic en **Checkout** (Checkout)
+   - En la sección **Checkout settings** (Configuración de Checkout), busca:
+     - ✅ **"Currency conversion"** (Conversión de moneda) - **ACTÍVALO**
+     - ✅ **"Localized pricing"** (Precios localizados) - **ACTÍVALO**
+   - Guarda los cambios
+   - **Importante:** Esto puede tardar unos minutos en aplicarse
+   - **Verificación:** Después de activarlo, prueba crear un nuevo checkout desde México y deberías ver el precio en MXN
 
 2. **Habilita pagos internacionales**
    - Dashboard → **Settings** → **Payments** → **Payment methods**

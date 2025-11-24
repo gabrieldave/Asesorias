@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
       line_items: [
         {
           price_data: {
-            currency: stripeCurrency,
+            currency: stripeCurrency, // Moneda base: USD
             product_data: {
               name: service.title,
               description: service.description,
@@ -175,14 +175,19 @@ export async function GET(request: NextRequest) {
         },
       ],
       mode: "payment",
-      // Configuración para pagos internacionales
+      // Configuración para pagos internacionales y conversión automática
       billing_address_collection: "auto",
       locale: "auto", // Stripe detectará automáticamente el idioma del cliente
+      // Habilitar conversión automática de moneda (requiere estar activado en Stripe Dashboard)
+      // Stripe mostrará el precio en la moneda local del cliente si Currency Conversion está habilitado
       payment_method_options: {
         card: {
           request_three_d_secure: "automatic", // 3D Secure automático para mayor seguridad
         },
       },
+      // Permitir que Stripe convierta automáticamente según la ubicación del cliente
+      // Esto funciona cuando "Currency conversion" está habilitado en Stripe Dashboard
+      currency: stripeCurrency, // Moneda base para la sesión
       success_url: `${request.nextUrl.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${request.nextUrl.origin}/?canceled=true`,
       customer_email: customerEmail,
