@@ -171,6 +171,7 @@ SUPABASE_SERVICE_ROLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+STRIPE_DEFAULT_CURRENCY=usd
 
 # Resend (Emails)
 RESEND_API_KEY=
@@ -192,7 +193,7 @@ ADMIN_EMAIL=
 
 ### Documentación Adicional
 
-- `GUIA_STRIPE_PRODUCCION.md` - Guía para configurar Stripe en producción
+- `GUIA_STRIPE_PRODUCCION.md` - Guía para configurar Stripe en producción (incluye pasos para habilitar pagos internacionales)
 - `CONFIGURACION_STRIPE_DOMINIO.md` - Configuración específica del dominio
 - `PWA_SETUP.md` - Documentación de la PWA
 - `GUIA_GOOGLE_CALENDAR.md` - Guía para configurar Google Calendar

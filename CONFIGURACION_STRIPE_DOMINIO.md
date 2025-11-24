@@ -125,6 +125,27 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
 
 ---
 
+## 🌍 Pagos Internacionales y Multidivisa
+
+1. **Habilita pagos internacionales en Stripe**
+   - Dashboard → **Settings** → **Payments** → **Payment methods**
+   - Haz clic en **Manage** y activa _International payments_ para tarjetas
+   - Marca las divisas adicionales (por ejemplo MXN, EUR, COP) dentro de **Presentment currencies**
+
+2. **Agrega divisas a tu balance**
+   - Dashboard → **Balances** → **Settings** → **Currencies**
+   - Haz clic en **Add currency** y agrega las monedas que vayas a recibir
+
+3. **Configura la moneda por defecto en la app**
+   - En Vercel agrega `STRIPE_DEFAULT_CURRENCY` (ej. `usd`, `mxn`, `eur`)
+   - Debe estar en minúsculas y usar el código ISO de 3 letras
+
+4. **Verifica el checkout**
+   - Realiza una reserva de prueba con una tarjeta internacional
+   - Revisa en Stripe → Payments que el pago se procese en la divisa correcta
+
+---
+
 ## 📞 Si Algo No Funciona
 
 1. **Revisa los logs:**

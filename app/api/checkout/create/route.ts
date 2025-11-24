@@ -9,6 +9,19 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
 });
 
+const DEFAULT_STRIPE_CURRENCY = (process.env.STRIPE_DEFAULT_CURRENCY || "usd").toLowerCase();
+const CURRENCY_REGEX = /^[a-z]{3}$/;
+
+const getStripeCurrency = () => {
+  if (CURRENCY_REGEX.test(DEFAULT_STRIPE_CURRENCY)) {
+    return DEFAULT_STRIPE_CURRENCY;
+  }
+  console.warn(
+    `[checkout/create] STRIPE_DEFAULT_CURRENCY inválida (${DEFAULT_STRIPE_CURRENCY}). Usando USD por defecto.`
+  );
+  return "usd";
+};
+
 // Cliente con service role key para bypass RLS
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -141,20 +154,20 @@ export async function GET(request: NextRequest) {
     const bookingData = booking as Booking;
 
     // Crear sesión de Stripe Checkout
-    // Stripe requiere el precio en centavos para USD (multiplicar por 100)
-    const priceInCents = Math.round(service.price * 100);
+    const priceInMinorUnit = Math.round(service.price * 100);
+    const stripeCurrency = getStripeCurrency();
     
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: stripeCurrency,
             product_data: {
               name: service.title,
               description: service.description,
             },
-            unit_amount: priceInCents,
+            unit_amount: priceInMinorUnit,
           },
           quantity: 1,
         },
