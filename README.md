@@ -100,6 +100,8 @@ Plataforma web moderna para gestionar asesorías de trading con las siguientes c
 1. Cliente completa el formulario de reserva
 2. Se crea un booking con estado "pending"
 3. Cliente es redirigido a Stripe Checkout
+   - **Pagos Internacionales**: Stripe muestra automáticamente el precio en la moneda local del cliente
+   - El precio base está en USD pero se convierte automáticamente según la ubicación
 4. Al completar el pago, Stripe envía webhook
 5. El webhook:
    - Actualiza el booking a "paid"
@@ -107,6 +109,14 @@ Plataforma web moderna para gestionar asesorías de trading con las siguientes c
    - Crea evento en Google Calendar
    - Crea reunión en Zoom
    - Envía emails de confirmación
+
+### 💱 Conversión Automática de Moneda
+
+El sistema está configurado para mostrar precios en la moneda local del cliente automáticamente:
+- **Precio base**: USD (almacenado en Supabase)
+- **Conversión**: Stripe convierte automáticamente según la ubicación del cliente
+- **Configuración requerida**: Habilitar "Currency conversion" en Stripe Dashboard
+  - Settings → Checkout → Checkout settings → Activar "Currency conversion" y "Localized pricing"
 
 ### Gestión de Horarios
 

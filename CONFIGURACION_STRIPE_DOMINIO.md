@@ -125,24 +125,40 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
 
 ---
 
-## 🌍 Pagos Internacionales y Multidivisa
+## 🌍 Pagos Internacionales y Conversión Automática de Moneda
 
-1. **Habilita pagos internacionales en Stripe**
+### ⚠️ IMPORTANTE: Configuración Requerida en Stripe Dashboard
+
+Para que los clientes vean automáticamente los precios en su moneda local, debes habilitar la conversión de moneda en Stripe:
+
+1. **Habilita Currency Conversion en Checkout**
+   - Ve a [Stripe Dashboard](https://dashboard.stripe.com) → **Settings** → **Checkout** → **Checkout settings**
+   - Activa **"Currency conversion"** (Conversión de moneda)
+   - Activa **"Localized pricing"** (Precios localizados)
+   - Esto permitirá que Stripe muestre automáticamente el precio en la moneda del cliente
+
+2. **Habilita pagos internacionales**
    - Dashboard → **Settings** → **Payments** → **Payment methods**
    - Haz clic en **Manage** y activa _International payments_ para tarjetas
    - Marca las divisas adicionales (por ejemplo MXN, EUR, COP) dentro de **Presentment currencies**
 
-2. **Agrega divisas a tu balance**
+3. **Agrega divisas a tu balance (opcional)**
    - Dashboard → **Balances** → **Settings** → **Currencies**
    - Haz clic en **Add currency** y agrega las monedas que vayas a recibir
+   - **Nota:** Con Currency Conversion habilitado, Stripe puede convertir automáticamente a tu moneda base (USD)
 
-3. **Configura la moneda por defecto en la app**
-   - En Vercel agrega `STRIPE_DEFAULT_CURRENCY` (ej. `usd`, `mxn`, `eur`)
-   - Debe estar en minúsculas y usar el código ISO de 3 letras
+4. **Configuración en la aplicación**
+   - El precio base está en **USD** (configurado en Supabase)
+   - La aplicación está configurada con:
+     - `billing_address_collection: "auto"` - Recolecta dirección de facturación automáticamente
+     - `locale: "auto"` - Stripe detecta el idioma del cliente
+     - `payment_method_options.card.request_three_d_secure: "automatic"` - 3D Secure automático
+   - Variable de entorno `STRIPE_DEFAULT_CURRENCY=usd` (ya configurada)
 
-4. **Verifica el checkout**
-   - Realiza una reserva de prueba con una tarjeta internacional
-   - Revisa en Stripe → Payments que el pago se procese en la divisa correcta
+5. **Verifica el checkout**
+   - Realiza una reserva de prueba desde diferentes países
+   - Verifica que Stripe muestre el precio convertido en la moneda local del cliente
+   - El pago se procesará en USD pero el cliente verá el equivalente en su moneda
 
 ---
 

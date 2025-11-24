@@ -154,6 +154,8 @@ export async function GET(request: NextRequest) {
     const bookingData = booking as Booking;
 
     // Crear sesión de Stripe Checkout
+    // El precio base está en USD, pero Stripe mostrará automáticamente la conversión
+    // según la ubicación del cliente si está habilitado en el Dashboard
     const priceInMinorUnit = Math.round(service.price * 100);
     const stripeCurrency = getStripeCurrency();
     
@@ -173,6 +175,14 @@ export async function GET(request: NextRequest) {
         },
       ],
       mode: "payment",
+      // Configuración para pagos internacionales
+      billing_address_collection: "auto",
+      locale: "auto", // Stripe detectará automáticamente el idioma del cliente
+      payment_method_options: {
+        card: {
+          request_three_d_secure: "automatic", // 3D Secure automático para mayor seguridad
+        },
+      },
       success_url: `${request.nextUrl.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${request.nextUrl.origin}/?canceled=true`,
       customer_email: customerEmail,
