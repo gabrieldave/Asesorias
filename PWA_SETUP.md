@@ -85,3 +85,4 @@ Para forzar una actualización del Service Worker:
 1. Cambia el `CACHE_NAME` en `public/sw.js`
 2. O elimina el cache desde DevTools: Application → Storage → Clear site data
 
+

@@ -65,3 +65,4 @@ Si el webhook no funciona:
 4. Revisa los logs en Stripe Dashboard → Webhooks → Tu endpoint → "Recent deliveries"
 
 
+

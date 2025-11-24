@@ -152,3 +152,4 @@ Una vez que hayas completado todos los pasos, tu aplicación estará lista para 
 https://asesorias.todossomostraders.com/api/webhooks/stripe
 ```
 
+

@@ -40,3 +40,4 @@ console.log('   - https://realfavicongenerator.net/');
 console.log('   - https://www.pwabuilder.com/imageGenerator');
 console.log('   - O instala sharp: npm install sharp --save-dev');
 
+
