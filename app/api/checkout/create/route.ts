@@ -9,19 +9,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
 });
 
-const DEFAULT_STRIPE_CURRENCY = (process.env.STRIPE_DEFAULT_CURRENCY || "usd").toLowerCase();
-const CURRENCY_REGEX = /^[a-z]{3}$/;
-
-const getStripeCurrency = () => {
-  if (CURRENCY_REGEX.test(DEFAULT_STRIPE_CURRENCY)) {
-    return DEFAULT_STRIPE_CURRENCY;
-  }
-  console.warn(
-    `[checkout/create] STRIPE_DEFAULT_CURRENCY inválida (${DEFAULT_STRIPE_CURRENCY}). Usando USD por defecto.`
-  );
-  return "usd";
-};
-
 // Cliente con service role key para bypass RLS
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -154,40 +141,33 @@ export async function GET(request: NextRequest) {
     const bookingData = booking as Booking;
 
     // Crear sesión de Stripe Checkout
-    // El precio base está en USD, pero Stripe mostrará automáticamente la conversión
-    // según la ubicación del cliente si está habilitado en el Dashboard
-    const priceInMinorUnit = Math.round(service.price * 100);
-    const stripeCurrency = getStripeCurrency();
+    // Si el servicio tiene stripe_price_id, usarlo (para Adaptive Pricing)
+    // Si no, usar price_data como fallback
+    const lineItems = service.stripe_price_id
+      ? [
+          {
+            price: service.stripe_price_id,
+            quantity: 1,
+          },
+        ]
+      : [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: service.title,
+                description: service.description,
+              },
+              unit_amount: Math.round(service.price * 100),
+            },
+            quantity: 1,
+          },
+        ];
     
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: stripeCurrency, // Moneda base: USD
-            product_data: {
-              name: service.title,
-              description: service.description,
-            },
-            unit_amount: priceInMinorUnit,
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       mode: "payment",
-      // Configuración para pagos internacionales y conversión automática
-      billing_address_collection: "auto",
-      locale: "auto", // Stripe detectará automáticamente el idioma del cliente
-      // Habilitar conversión automática de moneda (requiere estar activado en Stripe Dashboard)
-      // Stripe mostrará el precio en la moneda local del cliente si Currency Conversion está habilitado
-      payment_method_options: {
-        card: {
-          request_three_d_secure: "automatic", // 3D Secure automático para mayor seguridad
-        },
-      },
-      // Permitir que Stripe convierta automáticamente según la ubicación del cliente
-      // Esto funciona cuando "Currency conversion" está habilitado en Stripe Dashboard
-      currency: stripeCurrency, // Moneda base para la sesión
       success_url: `${request.nextUrl.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${request.nextUrl.origin}/?canceled=true`,
       customer_email: customerEmail,

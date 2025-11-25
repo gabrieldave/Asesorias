@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, title, price, description, features, active } = body;
+    const { id, title, price, description, features, active, stripe_price_id } = body;
 
     if (!title || price === undefined) {
       return NextResponse.json(
@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
           description: description || "",
           features: featuresArray,
           active: active !== undefined ? active : true,
+          stripe_price_id: stripe_price_id || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", id)
@@ -76,6 +77,7 @@ export async function POST(request: NextRequest) {
           description: description || "",
           features: featuresArray,
           active: active !== undefined ? active : true,
+          stripe_price_id: stripe_price_id || null,
         })
         .select()
         .single();
@@ -105,6 +107,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
 
 
 

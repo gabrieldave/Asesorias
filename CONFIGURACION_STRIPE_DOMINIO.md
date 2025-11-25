@@ -125,52 +125,6 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
 
 ---
 
-## 🌍 Pagos Internacionales y Conversión Automática de Moneda
-
-### ⚠️ IMPORTANTE: Configuración Requerida en Stripe Dashboard
-
-Para que los clientes vean automáticamente los precios en su moneda local, debes habilitar la conversión de moneda en Stripe:
-
-1. **Habilita Currency Conversion en Checkout (PASO CRÍTICO)**
-   
-   **⚠️ SIN ESTE PASO, LOS PRECIOS SIEMPRE SE MOSTRARÁN EN USD**
-   
-   Pasos detallados:
-   - Ve a [Stripe Dashboard](https://dashboard.stripe.com)
-   - En el menú lateral, ve a **Settings** (Configuración)
-   - Busca y haz clic en **Checkout** (Checkout)
-   - En la sección **Checkout settings** (Configuración de Checkout), busca:
-     - ✅ **"Currency conversion"** (Conversión de moneda) - **ACTÍVALO**
-     - ✅ **"Localized pricing"** (Precios localizados) - **ACTÍVALO**
-   - Guarda los cambios
-   - **Importante:** Esto puede tardar unos minutos en aplicarse
-   - **Verificación:** Después de activarlo, prueba crear un nuevo checkout desde México y deberías ver el precio en MXN
-
-2. **Habilita pagos internacionales**
-   - Dashboard → **Settings** → **Payments** → **Payment methods**
-   - Haz clic en **Manage** y activa _International payments_ para tarjetas
-   - Marca las divisas adicionales (por ejemplo MXN, EUR, COP) dentro de **Presentment currencies**
-
-3. **Agrega divisas a tu balance (opcional)**
-   - Dashboard → **Balances** → **Settings** → **Currencies**
-   - Haz clic en **Add currency** y agrega las monedas que vayas a recibir
-   - **Nota:** Con Currency Conversion habilitado, Stripe puede convertir automáticamente a tu moneda base (USD)
-
-4. **Configuración en la aplicación**
-   - El precio base está en **USD** (configurado en Supabase)
-   - La aplicación está configurada con:
-     - `billing_address_collection: "auto"` - Recolecta dirección de facturación automáticamente
-     - `locale: "auto"` - Stripe detecta el idioma del cliente
-     - `payment_method_options.card.request_three_d_secure: "automatic"` - 3D Secure automático
-   - Variable de entorno `STRIPE_DEFAULT_CURRENCY=usd` (ya configurada)
-
-5. **Verifica el checkout**
-   - Realiza una reserva de prueba desde diferentes países
-   - Verifica que Stripe muestre el precio convertido en la moneda local del cliente
-   - El pago se procesará en USD pero el cliente verá el equivalente en su moneda
-
----
-
 ## 📞 Si Algo No Funciona
 
 1. **Revisa los logs:**
@@ -197,5 +151,6 @@ Una vez que hayas completado todos los pasos, tu aplicación estará lista para 
 ```
 https://asesorias.todossomostraders.com/api/webhooks/stripe
 ```
+
 
 

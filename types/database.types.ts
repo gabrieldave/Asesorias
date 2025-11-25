@@ -39,6 +39,7 @@ export interface Service {
   title: string;
   description: string;
   price: number;
+  stripe_price_id?: string;
   duration?: number;
   features?: string[];
   active: boolean;

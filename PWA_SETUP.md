@@ -86,3 +86,4 @@ Para forzar una actualización del Service Worker:
 2. O elimina el cache desde DevTools: Application → Storage → Clear site data
 
 
+
