@@ -237,74 +237,74 @@ export default function BookingModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-0 sm:top-[10%] left-0 sm:left-1/2 sm:-translate-x-1/2 max-w-2xl w-full sm:w-[calc(100%-2rem)] bg-background border-terminal z-50 p-4 sm:p-8 h-screen sm:h-auto sm:max-h-[80vh] overflow-y-auto"
+            className="fixed top-2 sm:top-[5%] left-1 right-1 sm:left-1/2 sm:-translate-x-1/2 max-w-lg w-auto sm:w-[calc(100%-2rem)] bg-background border-terminal z-50 p-3 sm:p-5 max-h-[96vh] sm:max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex justify-between items-center mb-4 sm:mb-6 sticky top-0 bg-background pb-2 z-10">
-              <h2 className="text-lg sm:text-2xl font-bold uppercase tracking-wider pr-2">
+            <div className="flex justify-between items-center mb-3 sticky top-0 bg-background pb-1 z-10">
+              <h2 className="text-base sm:text-lg font-bold uppercase tracking-wider pr-2">
                 Agendar: {service.title || service.name}
               </h2>
               <button
                 onClick={onClose}
-                className="p-2 border-terminal hover-terminal flex-shrink-0"
+                className="p-1.5 border-terminal hover-terminal flex-shrink-0"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-4 sm:space-y-6">
+            <div className="space-y-3">
               {/* Información del servicio */}
-              <div className="border-terminal p-3 sm:p-4">
-                <p className="text-profit text-xl sm:text-2xl font-bold mb-2">
+              <div className="border-terminal p-2 sm:p-3">
+                <p className="text-profit text-lg sm:text-xl font-bold mb-1">
                   ${service.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                 </p>
-                <p className="text-foreground/70 text-xs sm:text-sm">{service.description}</p>
+                <p className="text-foreground/70 text-[10px] sm:text-xs">{service.description}</p>
               </div>
 
               {/* Selección de slot con calendario */}
               <div>
-                <label className="block text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3">
-                  <Calendar className="w-4 h-4 inline mr-2" />
+                <label className="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">
+                  <Calendar className="w-3 h-3 inline mr-1" />
                   Selecciona un horario
                 </label>
                 {loading ? (
-                  <div className="text-center py-8 text-foreground/50">
+                  <div className="text-center py-4 text-foreground/50 text-xs">
                     Cargando horarios disponibles...
                   </div>
                 ) : slots.length === 0 ? (
-                  <div className="text-center py-8 text-loss border border-loss p-4">
+                  <div className="text-center py-4 text-loss border border-loss p-2 text-xs">
                     No hay horarios disponibles en este momento
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {/* Calendario */}
-                    <div className="border-terminal p-3 sm:p-4">
+                    <div className="border-terminal p-2 sm:p-3">
                       {/* Header del calendario */}
-                      <div className="flex items-center justify-between mb-3 sm:mb-4">
+                      <div className="flex items-center justify-between mb-2">
                         <button
                           onClick={handlePrevMonth}
-                          className="p-2 sm:p-2 border-terminal hover-terminal min-w-[40px] min-h-[40px] flex items-center justify-center"
+                          className="p-1.5 border-terminal hover-terminal min-w-[32px] min-h-[32px] flex items-center justify-center"
                           type="button"
                         >
-                          <ChevronLeft className="w-5 h-5" />
+                          <ChevronLeft className="w-4 h-4" />
                         </button>
-                        <h3 className="text-base sm:text-lg font-bold uppercase tracking-wider px-2 text-center">
+                        <h3 className="text-sm sm:text-base font-bold uppercase tracking-wider px-1 text-center">
                           {format(currentMonth, "MMMM yyyy")}
                         </h3>
                         <button
                           onClick={handleNextMonth}
-                          className="p-2 sm:p-2 border-terminal hover-terminal min-w-[40px] min-h-[40px] flex items-center justify-center"
+                          className="p-1.5 border-terminal hover-terminal min-w-[32px] min-h-[32px] flex items-center justify-center"
                           type="button"
                         >
-                          <ChevronRight className="w-5 h-5" />
+                          <ChevronRight className="w-4 h-4" />
                         </button>
                       </div>
 
                       {/* Días de la semana */}
-                      <div className="grid grid-cols-7 gap-1 sm:gap-1 mb-2">
+                      <div className="grid grid-cols-7 gap-0.5 mb-1">
                         {["L", "M", "X", "J", "V", "S", "D"].map((day, idx) => (
                           <div
                             key={idx}
-                            className="text-center text-[10px] sm:text-xs font-semibold text-foreground/60 py-1 sm:py-2"
+                            className="text-center text-[9px] sm:text-[10px] font-semibold text-foreground/60 py-0.5"
                           >
                             {day}
                           </div>
@@ -312,7 +312,7 @@ export default function BookingModal({
                       </div>
 
                       {/* Días del mes */}
-                      <div className="grid grid-cols-7 gap-1 sm:gap-1">
+                      <div className="grid grid-cols-7 gap-0.5">
                         {calendarDays.map((day, idx) => {
                           const isCurrentMonth = isSameMonth(day, currentMonth);
                           const hasSlots = hasSlotsForDate(day);
@@ -325,7 +325,7 @@ export default function BookingModal({
                               onClick={() => handleDateClick(day)}
                               disabled={!hasSlots || !isCurrentMonth}
                               className={`
-                                aspect-square min-h-[44px] p-1 sm:p-2 text-[11px] sm:text-xs font-mono border transition-all
+                                aspect-square min-h-[36px] sm:min-h-[40px] p-0.5 text-[10px] sm:text-[11px] font-mono border transition-all
                                 ${!isCurrentMonth ? "text-foreground/20 border-border/20" : ""}
                                 ${hasSlots && isCurrentMonth
                                   ? "border-terminal hover-terminal cursor-pointer active:scale-95"
@@ -347,9 +347,9 @@ export default function BookingModal({
                               type="button"
                             >
                               <div className="flex flex-col items-center justify-center h-full">
-                                <span className="text-[11px] sm:text-xs">{format(day, "d")}</span>
+                                <span className="text-[10px] sm:text-[11px]">{format(day, "d")}</span>
                                 {hasSlots && isCurrentMonth && (
-                                  <span className="text-[7px] sm:text-[8px] mt-0.5 text-profit">
+                                  <span className="text-[6px] sm:text-[7px] text-profit leading-none">
                                     {slotsByDate[getDateKey(day)]?.length || 0}
                                   </span>
                                 )}
@@ -365,24 +365,24 @@ export default function BookingModal({
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="space-y-2"
+                        className="space-y-1.5"
                       >
-                        <label className="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-foreground/70">
-                          Horarios disponibles para {format(selectedDate, "EEEE, d 'de' MMMM")}
+                        <label className="block text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-foreground/70">
+                          Horarios para {format(selectedDate, "EEEE, d 'de' MMMM")}
                         </label>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-32 overflow-y-auto">
                           {slotsForSelectedDate.map((slot) => (
                             <button
                               key={slot.id}
                               onClick={() => setSelectedSlot(slot.id)}
-                              className={`p-2.5 sm:p-3 border-terminal text-left transition-all text-[10px] sm:text-xs min-h-[44px] active:scale-95 ${
+                              className={`p-2 border-terminal text-left transition-all text-[9px] sm:text-[10px] min-h-[36px] active:scale-95 ${
                                 selectedSlot === slot.id
                                   ? "bg-profit text-background border-profit"
                                   : "hover-terminal"
                               }`}
                             >
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-3 h-3 flex-shrink-0" />
+                              <div className="flex items-center gap-1.5">
+                                <Clock className="w-2.5 h-2.5 flex-shrink-0" />
                                 <span className="font-mono">
                                   {formatTimeOnly(slot)}
                                 </span>
@@ -395,15 +395,15 @@ export default function BookingModal({
 
                     {/* Mensaje si no hay horarios para el día seleccionado */}
                     {selectedDate && slotsForSelectedDate.length === 0 && (
-                      <div className="text-center py-3 sm:py-4 text-foreground/50 text-xs sm:text-sm border border-terminal">
+                      <div className="text-center py-2 text-foreground/50 text-[10px] border border-terminal">
                         No hay horarios disponibles para este día
                       </div>
                     )}
 
                     {/* Mensaje si no se ha seleccionado un día */}
                     {!selectedDate && (
-                      <div className="text-center py-3 sm:py-4 text-foreground/50 text-xs sm:text-sm border border-terminal">
-                        Selecciona un día del calendario para ver los horarios disponibles
+                      <div className="text-center py-2 text-foreground/50 text-[10px] border border-terminal">
+                        Selecciona un día del calendario para ver los horarios
                       </div>
                     )}
                   </div>
@@ -412,7 +412,7 @@ export default function BookingModal({
 
               {/* Mensaje de error */}
               {error && (
-                <div className="border border-loss bg-loss/10 text-loss p-3 sm:p-4 text-xs sm:text-sm">
+                <div className="border border-loss bg-loss/10 text-loss p-2 text-[10px] sm:text-xs">
                   {error}
                 </div>
               )}
@@ -422,10 +422,10 @@ export default function BookingModal({
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="space-y-4"
+                  className="space-y-2"
                 >
                   <div>
-                    <label className="block text-xs sm:text-sm font-semibold uppercase tracking-wider mb-2">
+                    <label className="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-1">
                       Nombre completo
                     </label>
                     <input
@@ -433,13 +433,13 @@ export default function BookingModal({
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       required
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-background border-terminal text-foreground font-mono text-sm focus:outline-none focus:border-profit"
+                      className="w-full px-2.5 py-2 bg-background border-terminal text-foreground font-mono text-xs focus:outline-none focus:border-profit"
                       placeholder="Juan Pérez"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs sm:text-sm font-semibold uppercase tracking-wider mb-2">
+                    <label className="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-1">
                       Email
                     </label>
                     <input
@@ -447,7 +447,7 @@ export default function BookingModal({
                       value={customerEmail}
                       onChange={(e) => setCustomerEmail(e.target.value)}
                       required
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-background border-terminal text-foreground font-mono text-sm focus:outline-none focus:border-profit"
+                      className="w-full px-2.5 py-2 bg-background border-terminal text-foreground font-mono text-xs focus:outline-none focus:border-profit"
                       placeholder="juan@example.com"
                     />
                   </div>
@@ -455,7 +455,7 @@ export default function BookingModal({
                   <button
                     onClick={handleConfirm}
                     disabled={!customerName || !customerEmail || processing}
-                    className="w-full py-3 sm:py-3 bg-profit text-background font-semibold uppercase tracking-wider text-xs sm:text-sm border-terminal hover-terminal disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] active:scale-95"
+                    className="w-full py-2.5 bg-profit text-background font-semibold uppercase tracking-wider text-[10px] sm:text-xs border-terminal hover-terminal disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px] active:scale-95"
                   >
                     {processing ? "Procesando..." : "Continuar al Pago"}
                   </button>
